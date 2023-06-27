@@ -1,0 +1,6 @@
+{
+  "type": "module",
+  "dependencies": {
+    "card-deck": "^1.0.1"
+  }
+}
