@@ -1,16 +1,13 @@
 export class Player{
-    constructor(id){
+    constructor(game, id){
+        if (game.type!=Game) {
+            //TODO: ^^ type check for a Game before instantiating; if not Game, throw error
+        }
+        this._game = game;
         this._id = id;
         this._hand = [];
         this._melds = [];
     }
 
-    getId() {return this._id;}
-    getHand() {return this._hand;}
-    getMelds() {return this._melds;}
-
-    setHand(hand) {this._hand = hand;}
-    addMeld(meld) {this._melds.push(meld);}
-    
-    resetCards() {this._hand = []; this._melds = [];}
+    resetCards() {this.#hand = []; this.#melds = [];}
 }

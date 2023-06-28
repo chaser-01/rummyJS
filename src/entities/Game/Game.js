@@ -2,6 +2,7 @@ import { PokerDeck } from "../PokerDeck/PokerDeck";
 import { loadConfigFile } from "./loadConfig.js";
 import { setDefaultCardsToDrawAndNumberOfDecks, setJokerOption, setWildcardOption } from "./setGameOptions.js";
 import { GameScore } from "./GameScore.js";
+import { GameRound } from "./GameRound.js";
 
 
 /*
@@ -16,28 +17,35 @@ export class Game {
     static _config = loadConfigFile(title);
 
     /*
-    Does the following:
-        -Initializes game options (may differ variant to variant)
-        -Initializes general game info (likely reuseable across rummy variants)
-        -Initializes the deck
+    Initializes changeable properties, ie options, through initializeOptions.
+    Initializes properties that are (i think?) common across all Rummy variants.
+    Initializes a deck (based on options), and a round (for handling round logic).
     */
-    constructor(players, options){
+    constructor(playerIds, options){    
         initializeOptions(options);
-            
-        this._players = players;
+
+        this._players = initializePlayers(playerIds);
         this._currentPlayerIndex = 0;
         this._currentRound = 0;
         this._score = createNewScore(players);
         this._endGame = false;
 
         this._deck = new PokerDeck(this._numberOfDecks, this._useJoker);
+
+        this._round = createRound();
+        this._currentRound = 1;
     }
 
+    /// Initialization functions ///
 
-
-    // INITIALIZATION FUNCTIONS //
-
-
+    //Initializes an array of Player objects given an array of playerIds, to assign to the Game.
+    initializePlayers(playerIds){
+        let players = [];
+        for (const playerId of playerIds){
+            players.push(new playerId(this, playerId));
+        }
+        return players;
+    }
 
     /*
     Initializes options from an options object; compares to config, where applicable.
@@ -57,10 +65,10 @@ export class Game {
         let numberOfDecks = options.numberOfDecks;
         let cardsToDrawDiscardPile = options.cardsToDrawDiscardPile;
 
-        this.useWildcard = setWildcardOption(this._config, useWildcard);
-        this.useJoker = setJokerOption(this._config, useJoker);
-        this.cardsToDrawDiscardPile = setCardsToDrawDiscardPile(this._config, cardsToDrawDiscardPile);
-        [this.cardsToDraw, this.numberOfDecks] = setDefaultCardsToDrawAndNumberOfDecks(this._config, this._players.length, cardsToDraw, numberOfDecks);
+        this._useWildcard = setWildcardOption(this._config, useWildcard);
+        this._useJoker = setJokerOption(this._config, useJoker);
+        this._cardsToDrawDiscardPile = setCardsToDrawDiscardPile(this._config, cardsToDrawDiscardPile);
+        [this._cardsToDraw, this._numberOfDecks] = setDefaultCardsToDrawAndNumberOfDecks(this._config, this._players.length, cardsToDraw, numberOfDecks);
     }
 
     /*
@@ -71,26 +79,26 @@ export class Game {
         return new GameScore(players);
     }
 
-    
-
-    // GAME FUNCTIONS // 
-
-
+    /// Game functions ///
 
     /*
     Starts the game.
     While the _endGame flag isn't true,
-        -Creates a new GameRound and calls startRound.
-        -Once round finishes, increments round.
+        -Calls startRound on the round.
+        -When it returns, increment currentRound.
     */
     startGame(){
-        
-    } 
+        while (!_endGame){
+            this._round.startRound();
+            this._currentRound++;
+        }
+    }
 
     /*
-    Sets _endGame to true.
+    Returns a Round object for handling round logic.
+    Variants with different round logic should implement their own round subclass, and override this function to instantiate them.
     */
-    setEndGameFlag(){
-        this._endGame = true;
+    createRound(){
+        return new GameRound(this);
     }
 }
