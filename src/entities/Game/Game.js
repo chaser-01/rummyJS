@@ -1,6 +1,7 @@
 import { GameStatus } from "./GameStatus.js";
 import { GameLogger } from "./GameLogger.js";
 import { PokerDeck } from "../PokerDeck/PokerDeck.js";
+import { Meld } from "../Meld/Meld.js";
 import { loadConfigFile } from "./loadConfig.js";
 import { setDefaultCardsToDrawAndNumberOfDecks, setJokerOption, setWildcardOption } from "./setGameOptions.js";
 import { GameScore } from "./GameScore.js";
@@ -8,58 +9,46 @@ import { GameScore } from "./GameScore.js";
 
 
 /*
-This class represents a generic game of Rummy.
-TO DO: write this out
+This class represents a game of Rummy.
+Functions are broadly divided into the following:
+    -Initialization: Used for initializing properties/objects for game use.
+    -Validation: Used for validating gamestate, melds, end-game actions, etc.
+    -Game actions: Used for handling non-player actions necessary in the game (dealing, next round, gamestate validation)
+    -Player actions: Used for handling player actions.
+
+Functions that may need to be overridden in variants will state so, otherwise it's likely not.
 */
 export class Game {
-    //variant title; also used for loading the correct variant config file
-    title = "Rummy";
-
-    //config for the game
-    static config = loadConfigFile(title);
+    static title = "Rummy"; //variant title; also used for loading the correct variant config file
+    static config = loadConfigFile(title); //config for the game
 
 
     /*  
-    Initializes some necessary properties/options for the game.
+    Initializes the following:
+        -A logger for handling game errors and tracking game actions.
+        -Properties for handling game logic and flow.
+        -The deck + a validation deck for checking validity of gamestate later on.
+
     This shouldn't need to be overridden in variants, only the functions within it.
     */
     constructor(playerIds, options){
-        //instantiate a logger for handling errors and tracking player turns
         this.logger = new GameLogger(self);
 
-        //set options for initializing some game-specific things    
         initializeOptions(options);
 
-        //initialize game-wide properties
         this.players = initializePlayers(playerIds);
         this.currentPlayerIndex = 0;
         this.currentRound = 0;
-        this.score = createNewScore(players);
-        this.endGame = false;
+        this.score = initializeScore(players);
+        this.gameStatus = GameStatus.ROUND_ENDED;
 
-        //initialize poker deck (may involve some options), which has discardPile property
-        //also initialize validationDeck which is used by validateGameState to check that gamestate hasn't been tampered with
         this.deck = new PokerDeck(this.numberOfDecks, this.useJoker);
         this.validationDeck = new Object.freeze(PokerDeck(this.numberOfDecks, this.useJoker));
-
-        //initialize properties that manage game flow
-        this.gameStatus = GameStatus.ROUND_ENDED;
-        this.currentRound = 0;
-        this.currentPlayerIndex = 0;
     }
 
 
-    /// Initialization functions ///
+    ///////////////////////// Initialization functions /////////////////////////
 
-
-    //Initializes an array of Player objects given an array of playerIds, to assign to the game.
-    initializePlayers(playerIds){
-        let players = [];
-        for (const playerId of playerIds){
-            players.push(new playerId(this, playerId));
-        }
-        return players;
-    }
 
     /*
     Initializes options from an options object; compares to config, where applicable.
@@ -85,19 +74,47 @@ export class Game {
         [this.cardsToDraw, this.numberOfDecks] = setDefaultCardsToDrawAndNumberOfDecks(this.config, this.players.length, cardsToDraw, numberOfDecks);
     }
 
+    //Initializes an array of Player objects given an array of playerIds, to assign to the game.
+    initializePlayers(playerIds){
+        let players = [];
+        for (const playerId of playerIds){
+            players.push(new playerId(this, playerId));
+        }
+        return players;
+    }
+
     /*
     Returns a new score object for storing/calculating scores for players.
     Variants that have different scoring systems should implement their own score subclasses, and override this function to instantiate them.
     */
-    createNewScore(players){
+    initializeScore(players){
         return new GameScore(players);
     }
+    
+
+    ///////////////////////// Validation functions /////////////////////////
 
 
-    /// Game action functions ///
+    //Checks that current game state is valid, ie total no. of cards is correct, all cards are valid unique deck cards, and all melds are valid.
+    //If anything is wrong, log to logger and set gameStatus to GAME_ENDED.
+    //Ideally called at the start of any gamestate-modifying player action function.
+    validateGameState(){
+
+    }
+
+    //Checks that the game is still in continuing state (ie, no player has triggered a game-ending action).
+    //I think this only happens when a player finishes their hand, but not really sure.
+    //Ideally called at the end of any gamestate-modifying player action function.
+    //Functions with different game-ending states may need to override this.
+    checkGameEnded(){
+
+    } 
 
 
-    //If status is correct, deals cards and resets currentPlayerIndex.
+    ///////////////////////// Game action functions /////////////////////////
+
+
+    //Deals cards to playing players and resets currentPlayerIndex.
     nextRound(){
         if (gameStatus !== GameStatus.ROUND_ENDED) {
             this.logger.logWarning(`Can't call nextRound() if status is: ${gameStatus}`);}
@@ -106,48 +123,57 @@ export class Game {
         this.currentPlayerIndex=0;
     }
 
-    
-    //Checks that current game state is valid, ie total no. of cards is correct, all cards are valid unique deck cards, and all melds are valid.
-    //If anything is wrong, log to logger and set gameStatus to GAME_ENDED.
-    //Ideally called during every player action function that modifies the game state.
-    validateGameState(){
+    //Goes to the next player.
+    nextPlayer(){
+        if (gameStatus !== GameStatus.PLAYER_TURN_ENDED){
+            this.logger(logWarning(`Can't call nextPlayer() if status is: ${gameStatus}`));
+        }
 
+        while (this.players[this.currentPlayerIndex+1].playing != true) this.currentPlayerIndex++;
+        this.gameStatus = GameStatus.PLAYER_TO_DRAW;
+        this.validateGameState();
+    }
+
+    //Sets a player as not playing (keeps his hands/melds); if it's the current player, automatically advance to next player.
+    quitPlayer(playerIndex){
+        this.players[playerIndex]._playing = false;
+        if (this.currentPlayerIndex === playerIndex){
+            gameStatus = GameStatus.PLAYER_TURN_ENDED;
+            this.nextPlayer();
+        }
+        this.validateGameState();
     }
 
     
-    /// Player action functions (acts on currentPlayerIndex player) ///
+    ///////////////////////// Player action functions (acts on currentPlayerIndex player) /////////////////////////
+
 
 
     //Draw *cardsToDraw* cards from deck and assigns to current player's hand, and set next gameStatus.
-    //First validates game state and checks that gameStatus allows for this action.
     drawFromDeck(){
         if (!this.validateGameState()) return;
         if (this.gameStatus !== GameStatus.PLAYER_TO_DRAW) {
             this.logger.logWarning(`Can't call a player action function while in gameStatus: ${this.gameStatus}`);
             return;
         }
-
         let drawnCards = this.deck.draw(this.cardsToDraw);
         this.players[this.currentPlayerIndex]._hand.push(drawnCards);
         this.gameStatus = GameStatus.PLAYER_TURN;
     }
 
     //Draw *cardsToDrawFromDiscardPile* cards from discard pile and assigns to current player's hand, and set next gameStatus.
-    //First validates game state and checks that gameStatus allows for this action.
     drawFromDiscardPile(){
         if (!this.validateGameState()) return;
         if (this.gameStatus !== GameStatus.PLAYER_TO_DRAW) {
             this.logger.logWarning(`Can't call a player action function while in gameStatus: ${this.gameStatus}`);
             return;
         }
-
-        let drawnCards = this.deck.discardPile.draw(this.cardsToDraw);
+        let drawnCards = this.deck.discardPile.draw(this.cardsToDrawDiscardPile);
         this.players[this.currentPlayerIndex]._hand.push(drawnCards);
         this.gameStatus = GameStatus.PLAYER_TURN;
     }
 
-    //Attempt to create a meld; if invalid, log it.
-    //First validates game state and checks that gameStatus allows for this action.
+    //Attempt to create a meld; if invalid, log it. Accepts an array of indexes for the chosen cards.
     createMeld(){
         if (!this.validateGameState()) return;
         if (this.gameStatus !== GameStatus.PLAYER_TURN) {
@@ -158,9 +184,13 @@ export class Game {
 
     }
 
-    //Attempt to add to a meld; if invalid, log it.
-    //First validates game state and checks that gameStatus allows for this action.
-    addToMeld(){
+    /*
+    Attempt to add to a meld; if invalid, log it. Accepts:
+        -addingCardIndex: Index of card in current player's hand to add to the meld
+        -meldOwnerIndex: Index of the player who owns the meld in question
+        -meldIndex: Index of the meld in the player's array of melds
+    */
+    addToMeld(addingCardIndex, meldOwnerIndex, meldIndex){
         if (!this.validateGameState()) return;
         if (this.gameStatus !== GameStatus.PLAYER_TURN) {
             this.logger.logWarning(`Can't call a player action function while in gameStatus: ${this.gameStatus}`);
@@ -170,9 +200,13 @@ export class Game {
 
     }
 
-    //Attempt to replace a meld's joker; if invalid, log it.
-    //First validates game state and checks that gameStatus allows for this action.
-    replaceMeldJoker(){
+    /*
+    Attempt to replace a meld's joker; if invalid, log it. Accepts:
+        -replacingCardIndex: Index of card in current player's hand to replace
+        -meldOwnerIndex: Index of the player who owns the meld in question
+        -meldIndex: Index of the meld in the player's array of melds
+    */
+    replaceMeldJoker(replacingCardIndex, meldOwnerIndex, meldIndex){
         if (!this.validateGameState()) return;
         if (this.gameStatus !== GameStatus.PLAYER_TURN) {
             this.logger.logWarning(`Can't call a player action function while in gameStatus: ${this.gameStatus}`);
@@ -182,8 +216,7 @@ export class Game {
 
     }
 
-    //End player turn and set gameStatus; player must choose a card to discard.
-    //First validates game state and checks that gameStatus allows for this action.
+    //End player turn and set gameStatus; cardIndex is the index of the card  which player will discard.
     endTurn(cardIndex){
         if (!this.validateGameState()) return;
         if (this.gameStatus !== GameStatus.PLAYER_TURN) {

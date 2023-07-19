@@ -25,7 +25,7 @@ export class Meld {
 
 
     /*
-    Verifies that newCcard can be added and still form a valid meld.
+    Verifies that newCard can be added and still form a valid meld.
     Accepts a card newCard, returns true/false + modifies _cards.
     */
     addCard(newCard){

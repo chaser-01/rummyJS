@@ -1,9 +1,7 @@
 import { PokerDeck } from "./src/entities/PokerDeck/PokerDeck.js";
 
 let deck = new PokerDeck();
+deck.addToDiscardPile(deck.draw(51))
+let x = deck.draw(5)
 console.log(deck)
-
-let x = deck.draw(51)
-deck.addToDiscardPile(x)
-deck.draw(3)
-
+console.log(x)

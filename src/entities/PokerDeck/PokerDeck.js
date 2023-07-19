@@ -12,8 +12,8 @@ export class Card {
 
 //Code mostly adopted from card-deck package but modified a bit
 class Deck{
-    constructor(cards){
-        if (!isArray(cards)) return this;
+    constructor(cards=[]){
+        if (!Array.isArray(cards)) this._stack = [];
         this._stack = cards;
         return this;
     }
@@ -49,18 +49,18 @@ class Deck{
 
     //add cards array to top of the deck
     addToTop(cards){
-        if (!isArray(cards)) return;
-        this._stack.unshift(cards);
+        this._stack = this._stack.concat(cards);
     }
 }
 
 
-/*
-Constructs a deck with all of the normal poker cards.
-Accepts numberOfDecks, the number of poker decks to put in this deck; defaults to 1.
-Accepts useJoker; if true, adds (2*numberOfDecks) jokers to the deck.
-*/
+//Extends Deck, automatically populates deck with poker cards (also depends on options) + has discardPile property
 export class PokerDeck extends Deck{
+
+        /*
+        Accepts numberOfDecks, the number of poker decks to put in this deck; defaults to 1.
+        Accepts useJoker; if true, adds (2*numberOfDecks) jokers to the deck.
+        */
         constructor(numberOfDecks=1, useJoker=false) {
             const cards = [];
             for (const suit of Object.keys(suits)) {
@@ -76,35 +76,30 @@ export class PokerDeck extends Deck{
             }
 
             super(cards);
-            this.discardPile = new Deck();
+            this._discardPile = new Deck();
         }
-
 
         //if deck will be empty after draw, or has less cards than can be drawn, add the discard pile back.
         //Then draw as usual.
         draw(count){
-            if (this._stack.length()-count <= 0 || !this.remaining()) this.resetDiscardPile();
+            if (this.remaining()-count <= 0 ) this.resetDiscardPile();
             return super.draw(count);
             
         }
 
-        addToTop(cards){
-
-        }
-
         //add a card to the discard pile
         addToDiscardPile(card){
-            this.discardPile.addToTop(card);
+            this._discardPile.addToTop(card);
         }
 
         //draw *count* cards from the discard pile
         drawFromDiscardPile(count){
-            this.discardPile.draw(count);
+            return this._discardPile.draw(count);
         }
 
         //puts discard pile back into the deck
         resetDiscardPile(){
-            let allDiscardedCards = this.discardPile.draw(this.discardPile.remaining());
+            let allDiscardedCards = this.drawFromDiscardPile(this._discardPile.remaining());
             this.addToTop(allDiscardedCards);
         }
     }
