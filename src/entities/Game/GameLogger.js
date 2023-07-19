@@ -1,7 +1,8 @@
 export class GameLogger{
     constructor(game){
         this.game = game;
-        this.gameLog = []; //an array of round objects that hold all game actions/warnings
+        this.actionLog = {};
+        this.warningLog = {};
     }
 
     logWarning(message){
@@ -11,5 +12,9 @@ export class GameLogger{
 
     logGameAction(action){
         //TO DO: some way of adding action to log
+    }
+
+    writeOut(){
+        //TO DO: low prio but eventually write out the logs somewhere
     }
 }
