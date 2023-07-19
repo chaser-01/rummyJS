@@ -9,5 +9,5 @@ export class Player{
         this._melds = [];
     }
 
-    resetCards() {this.#hand = []; this.#melds = [];}
+    resetCards() {this._hand = []; this._melds = [];}
 }

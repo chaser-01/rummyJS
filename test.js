@@ -1,17 +1,9 @@
-class A{
-    constructor(foo){
-        this.#foo = foo;
-        this.bar = new B(this);
-    }
+import { PokerDeck } from "./src/entities/PokerDeck/PokerDeck.js";
 
-    get foo(){return this.foo}
-}
+let deck = new PokerDeck();
+console.log(deck)
 
-class B{
-    constructor(object){
-        this.thing = object;
-    }
-}
-
-let test = new A('foo')
+let x = deck.draw(51)
+deck.addToDiscardPile(x)
+deck.draw(3)
 
