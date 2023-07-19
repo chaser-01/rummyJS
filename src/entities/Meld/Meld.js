@@ -9,12 +9,6 @@ export class Meld {
         }
     }
 
-    //Getter for _cards.
-    getCards(){
-        return [...this._cards];
-    }
-
-
     /*
     Verifies a meld with isMeld, in-class.
     Accepts an array of cards and an optional jokerNumber; returns true/false.
@@ -22,7 +16,6 @@ export class Meld {
     isComplete(cards, jokerNumber=0){
         return isMeld(cards, jokerNumber);
     }
-
 
     /*
     Verifies that newCard can be added and still form a valid meld.
@@ -35,7 +28,6 @@ export class Meld {
         }
         return false;
     }
-
 
     /*
     Verifies that the card at replacedIndex can be replaced with newCard, and still form a valid meld.

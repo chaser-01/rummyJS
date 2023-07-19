@@ -1,57 +1,6 @@
-import {suits, numbers} from '../../constants/constants.js';
-
-
-//Represents a singular card.
-export class Card {
-    constructor(suit, number) {
-        this.suit = suit;
-        this.number = number;
-    }
-}
-
-
-//Code mostly adopted from card-deck package but modified a bit
-class Deck{
-    constructor(cards=[]){
-        if (!Array.isArray(cards)) this._stack = [];
-        this._stack = cards;
-        return this;
-    }
-
-    //returns deck size
-    remaining(){
-        return this._stack.length;
-    }
-
-    //Fisher–Yates implementation adapted from http://bost.ocks.org/mike/shuffle/
-    shuffle() {
-        var remaining = this._stack.length;
-        var tmp;
-        var idx;
-      
-        // While there remain elements to shuffle…
-        while ( remaining ) {
-          // Pick a remaining element...
-          idx = Math.floor( Math.random() * remaining-- );
-      
-          // And swap it with the current element.
-          tmp = this._stack[ remaining ];
-          this._stack[ remaining ] = this._stack[ idx ];
-          this._stack[ idx ] = tmp;
-        }
-      }
-    
-    //draws *count* cards and removes them from deck.
-    draw(count){
-        let drawnCards = this._stack.splice(0, count);
-        return drawnCards;
-    }
-
-    //add cards array to top of the deck
-    addToTop(cards){
-        this._stack = this._stack.concat(cards);
-    }
-}
+import { suits, numbers } from '../../constants/constants.js';
+import { Card } from './Card.js';
+import { Deck } from './Deck.js';
 
 
 //Extends Deck, automatically populates deck with poker cards (also depends on options) + has discardPile property
@@ -63,10 +12,10 @@ export class PokerDeck extends Deck{
         */
         constructor(numberOfDecks=1, useJoker=false) {
             const cards = [];
-            for (const suit of Object.keys(suits)) {
-                for (const number of Object.keys(numbers)) {
+            for (const x in suits) {
+                for (const y in numbers) {
                     for (let i=0; i<numberOfDecks; i++){
-                        cards.push(new Card(suit, number));
+                        cards.push(new Card(suits[x], numbers[y]));
                     }
                 }
             }
@@ -79,12 +28,10 @@ export class PokerDeck extends Deck{
             this._discardPile = new Deck();
         }
 
-        //if deck will be empty after draw, or has less cards than can be drawn, add the discard pile back.
-        //Then draw as usual.
+        //If deck is empty after draw, or its size is lower than count, add the discard pile back; then draw as usual.
         draw(count){
             if (this.remaining()-count <= 0 ) this.resetDiscardPile();
             return super.draw(count);
-            
         }
 
         //add a card to the discard pile

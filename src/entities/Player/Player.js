@@ -9,9 +9,7 @@ export class Player{
         this._playing = true;
     }
 
-    resetCards() {this._hand = []; this._melds = [];}
-
     addToHand(cards) {this._hand.push(cards);}
-
     addMeld(meld) {this._melds.push(meld);}
+    resetCards() {this._hand = []; this._melds = [];}
 }
