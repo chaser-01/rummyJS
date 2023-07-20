@@ -1,4 +1,4 @@
-import { suits, numbers } from '../../constants/constants.js';
+import { suits, numbers } from './suitsNumbers.js';
 import { Card } from './Card.js';
 import { Deck } from './Deck.js';
 

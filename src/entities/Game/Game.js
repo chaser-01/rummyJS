@@ -1,7 +1,7 @@
 import { GameStatus } from "./GameStatus.js";
 import { GameLogger } from "./GameLogger.js";
 import { PokerDeck } from "../PokerDeck/PokerDeck.js";
-import { numbers } from "../../constants/constants.js";
+import { numbers } from "../PokerDeck/suitsNumbers.js";
 import { Meld } from "../Meld/Meld.js";
 import { loadConfigFile } from "./loadConfig.js";
 import { setDefaultCardsToDrawAndNumberOfDecks, setJokerOption, setWildcardOption } from "./setGameOptions.js";
@@ -28,13 +28,12 @@ export class Game {
     Initializes the following:
         -A logger for handling game errors and tracking game actions.
         -Properties for handling game logic and flow.
-        -The deck + a validation deck for checking validity of gamestate later on.
-        -Joker (can be printed, or wildcard)
+        -The deck + copy of its cards as validationDeck, for use in validateGameState()
 
     This shouldn't need to be overridden in variants, only the functions within it.
     */
     constructor(playerIds, options){
-        this.logger = new GameLogger(self);
+        this.logger = new GameLogger(this);
 
         initializeOptions(options); 
 
@@ -46,7 +45,7 @@ export class Game {
         this.jokerNumber = initializeJoker();
 
         this.deck = initializeDeck();
-        this.validationDeck = new Object.freeze(PokerDeck(this.numberOfDecks, this.useJoker));
+        this.validationDeck = this.deck._stack.slice();
     }
 
 
@@ -113,12 +112,38 @@ export class Game {
 
 
 
-    //Checks that current game state is valid, ie tally total cards, check all cards are unique and belong to deck, and all melds are valid.
+    //Copy all cards in-game to checkDeckm and check it against validationDeck; also, check all players' melds for validity.
     //If anything is wrong, log to logger and set gameStatus to GAME_ENDED.
     //Ideally called at the start of any gamestate-modifying player action function.
-    //TO DO
     validateGameState(){
+        let checkDeck = [];
+        checkDeck.push(this._deck._stack);
+        checkDeck.push(this._deck._discardPile._stack);
 
+        for (player of this.players){
+            checkDeck.push(player._hand);
+            for (meld of player._melds){
+                checkDeck.push(meld._cards);
+
+                //if any meld isn't valid/complete, shutdown game
+                if (!meld.isComplete()) { 
+                    this.logger.logWarning(`Invalid meld found: ${meld._cards}; shutting down game.`);
+                    this.gameStatus = GameStatus.END_GAME;
+                    return false;
+                }
+            }
+        }
+
+        //sort checkDeck and validationDeck and compare; if not the same, gamestate was tampered so shut down game
+        checkDeck.sort((a, b) => a.compareTo(b));
+        this.validationDeck.sort((a, b) => a.compareTo(b));
+        if (checkDeck != this.validationDeck){
+            this.logger.logWarning(`Game state invalid, cards do not tally with initial deck. Shutting down game.`);
+            this.gameStatus = GameStatus.END_GAME;
+            return false;
+        }
+
+        return true;
     }
 
 
@@ -139,17 +164,18 @@ export class Game {
 
 
 
-    //Increment round, reset currentPlayerIndex, resets player cards and deals from a new deck.
-    //If applicable, also increments jokerNumber using currentRound+1 (must % in case many rounds are played).
+    //Starts the next round.
     nextRound(){
         if (gameStatus !== GameStatus.ROUND_ENDED) {
             this.logger.logWarning(`Can't call nextRound() if status is: ${gameStatus}`);
         }
-
+        
+        //increment round and reset currentPlayerIndex; if applicable, increments jokerNumber
         this.currentRound++;
         this.currentPlayerIndex=0;
         if (this.useWildcard) this.jokerNumber = numbers[(this.currentRound+1)%Object.keys(numbers).length];
 
+        //reset deck and deal cards
         this.deck = this.initializeDeck();
         for (player of players){
             player.resetCards();
@@ -159,12 +185,15 @@ export class Game {
 
 
     //Goes to the next player.
+    //Note: No logging as it will be implied by logging of the next player's actions anyway
     nextPlayer(){
         if (!this.validateGameState()) return;
         if (gameStatus !== GameStatus.PLAYER_TURN_ENDED){
             this.logger(logWarning(`Can't call nextPlayer() if status is: ${gameStatus}`));
         }
-        while (this.players[this.currentPlayerIndex+1].playing != true) this.currentPlayerIndex++;
+
+        //if next player isn't playing or just joined (no cards in hand yet), go to the next next player
+        while (this.players[this.currentPlayerIndex+1].playing!=true || this.players[this.currentPlayerIndex+1]._hand==[]) this.currentPlayerIndex++;
         this.gameStatus = GameStatus.PLAYER_TO_DRAW;
     }
 
@@ -179,7 +208,15 @@ export class Game {
         }
     }
 
-    
+
+    //Add player to game.
+    //TO DO: figure out logging
+    addPlayer(playerId){
+        this.players.push(new Player(this, playerId));
+        this.logger.logGameAction('?');
+    }
+
+
 
     ////////////////////////////////////////////////////////////////////////////
     //////// Player action functions (acts on player currentPlayerIndex) ///////
@@ -195,8 +232,11 @@ export class Game {
             this.logger.logWarning(`Can't call a player action function while in gameStatus: ${this.gameStatus}`);
             return;
         }
+
         let drawnCards = this.deck.draw(this.cardsToDraw);
         this.players[this.currentPlayerIndex]._hand.push(drawnCards);
+
+
         this.gameStatus = GameStatus.PLAYER_TURN;
     }
 

@@ -1,4 +1,4 @@
-import {Card} from '../entities/PokerDeck/PokerDeck.js';
+import {Card} from './PokerDeck.js';
 
 export const suits = 
             {
