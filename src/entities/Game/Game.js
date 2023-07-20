@@ -1,10 +1,11 @@
 import { GameStatus } from "./GameStatus.js";
 import { GameLogger } from "./GameLogger.js";
+import { Player } from "../Player/Player.js";
 import { PokerDeck } from "../PokerDeck/PokerDeck.js";
 import { numbers } from "../PokerDeck/suitsNumbers.js";
 import { Meld } from "../Meld/Meld.js";
 import { loadConfigFile } from "./loadConfig.js";
-import { setDefaultCardsToDrawAndNumberOfDecks, setJokerOption, setWildcardOption } from "./setGameOptions.js";
+import { setCardsToDrawAndNumberOfDecks, setCardsToDrawDiscardPile, setJokerOption, setWildcardOption } from "./setGameOptions.js";
 import { GameScore } from "./GameScore.js";
 
 
@@ -20,32 +21,31 @@ Functions are broadly divided into the following:
 Functions that may need to be overridden in variants will state so, otherwise it's likely not.
 */
 export class Game {
-    static title = "Rummy"; //variant title; also used for loading the correct variant config file
-    static config = loadConfigFile(title); //config for the game
-
+    title = "rummy"; //variant title; also used for loading the correct variant config file
+    config = loadConfigFile(this.title);
 
     /*  
     Initializes the following:
         -A logger for handling game errors and tracking game actions.
         -Properties for handling game logic and flow.
-        -The deck + copy of its cards as validationDeck, for use in validateGameState()
+        -The deck + copy of its cards as validationCards, for use in validateGameState()
 
     This shouldn't need to be overridden in variants, only the functions within it.
     */
-    constructor(playerIds, options){
+    constructor(playerIds, options={}){
         this.logger = new GameLogger(this);
 
-        initializeOptions(options); 
-
-        this.players = initializePlayers(playerIds);
+        this.players = this.initializePlayers(playerIds);
         this.currentPlayerIndex = 0;
         this.currentRound = -1;
-        this.score = initializeScore(players);
+        this.score = this.initializeScore(this.players);
         this.gameStatus = GameStatus.ROUND_ENDED;
-        this.jokerNumber = initializeJoker();
+        this.jokerNumber = this.initializeJoker();
 
-        this.deck = initializeDeck();
-        this.validationDeck = this.deck._stack.slice();
+        this.initializeOptions(options); 
+
+        this.deck = this.initializeDeck();
+        this.validationCards = this.deck._stack.slice();
     }
 
 
@@ -64,7 +64,7 @@ export class Game {
         this.useWildcard = setWildcardOption(this.config, options.useWildcard);
         this.useJoker = setJokerOption(this.config, options.useJoker);
         this.cardsToDrawDiscardPile = setCardsToDrawDiscardPile(this.config, options.cardsToDrawDiscardPile);
-        [this.cardsToDraw, this.numberOfDecks] = setDefaultCardsToDrawAndNumberOfDecks(this.config, this.players.length, options.cardsToDraw, options.numberOfDecks);
+        [this.cardsToDraw, this.numberOfDecks] = setCardsToDrawAndNumberOfDecks(this.config, this.players.length, options.cardsToDraw, options.numberOfDecks);
 
         //Since jokers and wildcards can't (shouldn't?) be used simultaneously, if they are both enabled, disable useWildcard.
         if (this.useJoker && this.useWildcard) this.useWildcard = false;
@@ -75,7 +75,7 @@ export class Game {
     initializePlayers(playerIds){
         let players = [];
         for (const playerId of playerIds){
-            players.push(new playerId(this, playerId));
+            players.push(new Player(this, playerId));
         }
         return players;
     }
@@ -116,14 +116,14 @@ export class Game {
     //If anything is wrong, log to logger and set gameStatus to GAME_ENDED.
     //Ideally called at the start of any gamestate-modifying player action function.
     validateGameState(){
-        let checkDeck = [];
-        checkDeck.push(this._deck._stack);
-        checkDeck.push(this._deck._discardPile._stack);
+        let checkCards = [];
+        checkCards.push(this._deck._stack);
+        checkCards.push(this._deck._discardPile._stack);
 
         for (player of this.players){
-            checkDeck.push(player._hand);
+            checkCards.push(player._hand);
             for (meld of player._melds){
-                checkDeck.push(meld._cards);
+                checkCards.push(meld._cards);
 
                 //if any meld isn't valid/complete, shutdown game
                 if (!meld.isComplete()) { 
@@ -135,9 +135,9 @@ export class Game {
         }
 
         //sort checkDeck and validationDeck and compare; if not the same, gamestate was tampered so shut down game
-        checkDeck.sort((a, b) => a.compareTo(b));
-        this.validationDeck.sort((a, b) => a.compareTo(b));
-        if (checkDeck != this.validationDeck){
+        checkCards.sort((a, b) => a.compareTo(b));
+        this.validationCards.sort((a, b) => a.compareTo(b));
+        if (checkCards != this.validationCards){
             this.logger.logWarning(`Game state invalid, cards do not tally with initial deck. Shutting down game.`);
             this.gameStatus = GameStatus.END_GAME;
             return false;

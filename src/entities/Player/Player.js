@@ -1,7 +1,5 @@
 export class Player{
     constructor(game, id){
-        if (game.type!=Game) {
-        }
         this._game = game;
         this._id = id;
         this._hand = [];

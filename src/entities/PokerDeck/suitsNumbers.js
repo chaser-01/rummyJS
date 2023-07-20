@@ -1,5 +1,3 @@
-import {Card} from './PokerDeck.js';
-
 export const suits = 
             {
                 1: 'Hearts',

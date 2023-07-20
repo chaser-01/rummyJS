@@ -1,10 +1,7 @@
-
-{   
+{
     "useJoker": true,
-
-    "useWildcard": false,
-
-    "cardsToDeal": {
+    "useWildcard": false, 
+    "cardsToDraw": {
         "decks": {
             "1": {
                 "players": {
@@ -15,7 +12,6 @@
                     "6": 6
                 }
             },
-
             "2": {
                 "players": {
                     "3": 10,
