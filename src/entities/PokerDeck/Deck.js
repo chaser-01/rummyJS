@@ -2,8 +2,13 @@
 export class Deck{
     constructor(cards=[]){
         if (!Array.isArray(cards)) this._stack = [];
-        this._stack = cards;
+        else this._stack = cards;
         return this;
+    }
+
+    //returns cards
+    getCards(){
+        return this._stack;
     }
 
     //returns deck size

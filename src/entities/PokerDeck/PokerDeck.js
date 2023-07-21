@@ -32,21 +32,31 @@ export class PokerDeck extends Deck{
             this._discardPile = new Deck();
         }
 
+
         //If deck is empty after draw, or its size is lower than count, add the discard pile back; then draw as usual.
         draw(count){
             if (this.remaining()-count <= 0 ) this.resetDiscardPile();
             return super.draw(count);
         }
 
+
+        //returns discard pile
+        getDiscardPile(){
+            return this._discardPile._stack;
+        }
+
+
         //add a card to the discard pile
         addToDiscardPile(card){
             this._discardPile.addToTop(card);
         }
 
+
         //draw *count* cards from the discard pile
         drawFromDiscardPile(count){
             return this._discardPile.draw(count);
         }
+
 
         //puts discard pile back into the deck
         resetDiscardPile(){
