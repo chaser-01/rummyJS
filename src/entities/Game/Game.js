@@ -26,7 +26,8 @@ export class Game {
     /*  
     Initializes the following:
         -A logger for handling game errors and tracking game actions.
-        -Properties for handling game logic and flow.
+        -Player objects for tracking players
+        -General properties for handling game logic and flow.
         -The deck + copy of its cards as validationCards, for use in validateGameState()
 
     This shouldn't need to be overridden in variants, only the functions within it.
@@ -35,13 +36,14 @@ export class Game {
         this.logger = new Logger(this);
 
         this.players = this.initializePlayers(playerIds);
+        
+        this.initializeOptions(options); 
+
+        this.score = this.initializeScore(this.players);
         this.currentPlayerIndex = 0;
         this.currentRound = -1;
-        this.score = this.initializeScore(this.players);
         this.gameStatus = GameStatus.ROUND_ENDED;
-        this.jokerNumber = this.initializeJoker();
-
-        this.initializeOptions(options);                                                
+        this.jokerNumber = this.initializeJoker();                    
 
         this.deck = this.initializeDeck();
         this.validationCards = this.deck._stack.slice();

@@ -66,6 +66,7 @@ export function setCardsToDrawAndNumberOfDecks(config, playersSize, cardsToDraw,
             if (cardsToDraw){
                 setCardsToDraw = cardsToDraw;
                 setNumberOfDecks = deckNo;
+                break;
             }
         }
 
