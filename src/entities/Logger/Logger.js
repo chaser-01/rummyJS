@@ -1,4 +1,4 @@
-export class GameLogger{
+export class Logger{
     constructor(game){
         this.game = game;
         this.actionLog = {};

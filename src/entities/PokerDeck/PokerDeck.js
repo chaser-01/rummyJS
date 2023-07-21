@@ -6,6 +6,10 @@ import { Deck } from './Deck.js';
 //Extends Deck, automatically populates deck with poker cards (also depends on options) + has discardPile property
 export class PokerDeck extends Deck{
 
+        //so they're accessed as part of PokerDeck
+        static suits = suits;
+        static numbers = numbers;
+
         /*
         Accepts numberOfDecks, the number of poker decks to put in this deck; defaults to 1.
         Accepts useJoker; if true, adds (2*numberOfDecks) jokers to the deck.
@@ -21,7 +25,7 @@ export class PokerDeck extends Deck{
             }
 
             if (useJoker) {
-                for (i=0; i<numberOfDecks*2; i++) cards.push(new Card('Joker', 'Joker'));
+                for (let i=0; i<numberOfDecks*2; i++) cards.push(new Card('Joker', 'Joker'));
             }
 
             super(cards);

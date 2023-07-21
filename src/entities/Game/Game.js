@@ -1,8 +1,7 @@
 import { GameStatus } from "./GameStatus.js";
-import { GameLogger } from "./GameLogger.js";
+import { Logger } from "../Logger/Logger.js";
 import { Player } from "../Player/Player.js";
 import { PokerDeck } from "../PokerDeck/PokerDeck.js";
-import { numbers } from "../PokerDeck/suitsNumbers.js";
 import { Meld } from "../Meld/Meld.js";
 import { loadConfigFile } from "./loadConfig.js";
 import { setCardsToDrawAndNumberOfDecks, setCardsToDrawDiscardPile, setJokerOption, setWildcardOption } from "./setGameOptions.js";
@@ -33,7 +32,7 @@ export class Game {
     This shouldn't need to be overridden in variants, only the functions within it.
     */
     constructor(playerIds, options={}){
-        this.logger = new GameLogger(this);
+        this.logger = new Logger(this);
 
         this.players = this.initializePlayers(playerIds);
         this.currentPlayerIndex = 0;
@@ -42,7 +41,7 @@ export class Game {
         this.gameStatus = GameStatus.ROUND_ENDED;
         this.jokerNumber = this.initializeJoker();
 
-        this.initializeOptions(options); 
+        this.initializeOptions(options);                                                
 
         this.deck = this.initializeDeck();
         this.validationCards = this.deck._stack.slice();
@@ -101,7 +100,7 @@ export class Game {
     //Initializes jokerNumber.
     initializeJoker(){
         if (this.useJoker) return 'Joker';
-        else if (this.useWildcard) return numbers[1];
+        else if (this.useWildcard) return this.deck.numbers[1];
     }
     
 
@@ -173,7 +172,7 @@ export class Game {
         //increment round and reset currentPlayerIndex; if applicable, increments jokerNumber
         this.currentRound++;
         this.currentPlayerIndex=0;
-        if (this.useWildcard) this.jokerNumber = numbers[(this.currentRound+1)%Object.keys(numbers).length];
+        if (this.useWildcard) this.jokerNumber = this.deck.numbers[(this.currentRound+1)%Object.keys(this.deck.numbers).length];
 
         //reset deck and deal cards
         this.deck = this.initializeDeck();

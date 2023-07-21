@@ -46,8 +46,8 @@ export function setCardsToDrawDiscardPile(config, cardsToDrawDiscardPile){
 
 /*
 Returns cardsToDraw and numberOfDecks options.
-Also checks to see if total cards drawn exceeds the total deck size; if so, overrides the specified options.
-Also checks other numberOfDecks, if given one doesn't specify a cardsToDraw in the config.
+Checks to see if total cards drawn exceeds the total deck size; if so, overrides the specified options.
+Checks other numberOfDecks, if given one doesn't specify a cardsToDraw in the config.
 */
 export function setCardsToDrawAndNumberOfDecks(config, playersSize, cardsToDraw, numberOfDecks){
     let setCardsToDraw, setNumberOfDecks;
@@ -57,19 +57,22 @@ export function setCardsToDrawAndNumberOfDecks(config, playersSize, cardsToDraw,
         return [cardsToDraw, numberOfDecks];
     }
 
-    //if no cardsToDraw found for the given numberOfDecks, or for given playersSize,
-    //then loop through other numberOfDecks for a valid cardsToDraw for the given playersSize.
+    //if cardsToDraw not specified, or no cardsToDraw found for the given numberOfDecks/given numberOfDecks and playersSize,
+    //then loop through other numberOfDecks to find existing cardsToDraw for the given playersSize, and use that.                                                                  
     let cardsToDrawRules = config.cardsToDraw.decks;
-    if (!cardsToDrawRules[numberOfDecks] || !cardsToDrawRules[numberOfDecks].players[playersSize]){
-        for (const deckNo in cardsToDrawRules[numberOfDecks]){
+    if (numberOfDecks===undefined || !cardsToDrawRules[numberOfDecks] || !cardsToDrawRules[numberOfDecks].players[playersSize]){
+        for (const deckNo in cardsToDrawRules){
             let cardsToDraw = cardsToDrawRules[deckNo].players[playersSize];
             if (cardsToDraw){
                 setCardsToDraw = cardsToDraw;
                 setNumberOfDecks = deckNo;
             }
         }
-        //if nothing found at all for playersSize, throw an error
-        throw new Error('No amount of cards can be dealt for the amount of players given.');
+
+        //if no cardsToDraw found at all for playersSize, throw error
+        if (!setCardsToDraw || !setNumberOfDecks){
+            throw new Error('No amount of cards can be dealt for the amount of players given.');
+        }
     }
 
     //if cardsToDraw exists for given numberOfDecks and playersSize, return it
