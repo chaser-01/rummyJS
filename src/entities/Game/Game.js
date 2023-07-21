@@ -183,11 +183,6 @@ export class Game {
         this.currentPlayerIndex=0;
         if (this.useWildcard) this.jokerNumber = this.deck.numbers[(this.currentRound+1)%Object.keys(this.deck.numbers).length];
 
-        //if not first round, use Score object to find previous round winner so they can start first
-        if (this.currentRound!=-1){
-            //TO DO
-        }
-
         //reset deck and deal cards
         this.deck = this.initializeDeck();
         for (const player of this.players){
@@ -195,7 +190,17 @@ export class Game {
             player.addToHand(this.deck.draw(this.cardsToDraw));
         }
 
-        this.gameStatus = GameStatus.PLAYER_TO_DRAW;
+        //if not first round, use Score object to find previous round winner so they can start first
+        if (this.currentRound!==0){
+            //TO DO
+            this.gameStatus = GameStatus.PLAYER_TO_DRAW;
+        }
+
+        //else give the first player an extra card, and skip their draw
+        else{
+            this.players[0].addToHand(this.deck.draw(1));
+            this.gameStatus = GameStatus.PLAYER_TURN;
+        }
     }
 
 
