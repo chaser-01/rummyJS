@@ -1,4 +1,4 @@
-
+import { Card } from "../PokerDeck/Card.js";
 import {suits, numbers} from "../PokerDeck/suitsNumbers.js";
 
 
@@ -37,8 +37,8 @@ function isValidSequence(cards, jokerNumber=0) {
   const isValid = jokerlessCards.every((card, index) => {
     if (index==0) return true;
 
-    const currentCardValue = cardValue(card);
-    const previousCardValue = cardValue(jokerlessCards[index-1]);
+    const currentCardValue = card.cardValue(card);
+    const previousCardValue = card.cardValue(jokerlessCards[index-1]);
     const difference = currentCardValue - previousCardValue;
 
     while (difference>1 && jokerCount>0){
@@ -95,16 +95,6 @@ function filterJokers(cards){
     } 
     )
   }
-  jokerlessCards.sort((a, b) => cardValue(a) - cardValue(b));
+  jokerlessCards.sort(Card.compareCards);
   return [jokerlessCards, jokerCount];
-}
-
-
-/*
-Returns value of a card.
-Each number in the same suit is subsequent, for checking sequences.
-For checking sets, simply checking the number property is enough.
-*/
-function cardValue(card){
-  return suits[card.suit]*100 + numbers[card.number];
 }

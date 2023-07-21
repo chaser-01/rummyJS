@@ -1,4 +1,4 @@
-import { suits, numbers } from './suitsNumbers.js';
+import { suits, numbers, suitNumberValue } from './suitsNumbers.js';
 
 //Represents a singular card.
 export class Card {
@@ -7,19 +7,15 @@ export class Card {
         this.number = number;
     }
 
-    compareTo(otherCard) {
-        const rankOrder = Object.keys(numbers);
-        const suitOrder = Object.keys(suits);
+    //card value for below sorting function
+    cardValue(){
+        let suitValue, numberValue;
+        [suitValue, numberValue] = suitNumberValue(this.suit, this.number);
+        return suitValue*100 + numberValue;
+    }
 
-        const rankComparison = rankOrder.indexOf(this.rank) - rankOrder.indexOf(otherCard.rank);
-        const suitComparison = suitOrder.indexOf(this.suit) - suitOrder.indexOf(otherCard.suit);
-
-        // If ranks are different, return the rank comparison result
-        if (rankComparison !== 0) {
-        return rankComparison;
-        }
-
-        // If ranks are the same, return the suit comparison result
-        return suitComparison;
+    //pass this into sort() for an array of Cards
+    static compareCards(a, b) {
+        return a.cardValue() - b.cardValue();
     }
 }

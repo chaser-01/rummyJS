@@ -2,6 +2,7 @@ import { GameStatus } from "./GameStatus.js";
 import { Logger } from "../Logger/Logger.js";
 import { Player } from "../Player/Player.js";
 import { PokerDeck } from "../PokerDeck/PokerDeck.js";
+import { Card } from "../PokerDeck/Card.js";
 import { Meld } from "../Meld/Meld.js";
 import { loadConfigFile } from "./loadConfig.js";
 import { setCardsToDrawAndNumberOfDecks, setCardsToDrawDiscardPile, setJokerOption, setWildcardOption } from "./setGameOptions.js";
@@ -11,11 +12,12 @@ import { GameScore } from "./GameScore.js";
 
 /*
 This class represents a game of Rummy.
-Functions are broadly divided into the following:
-    -Initialization: Used for initializing properties/objects for game use.
-    -Validation: Used for validating gamestate, melds, end-game actions, etc.
+Functions are divided into:
+    -Initialization: Used for initializing properties/objects for game use
+    -Validation: Used for validating gamestate, melds, end-game actions, etc
     -Game actions: Used for handling non-player actions necessary in the game (dealing, next round, gamestate validation)
-    -Player actions: Used for handling player actions.
+    -Player actions: Used for handling player actions
+    -Viewing: Used for easier viewing of the game as a player/spectator
 
 Functions that may need to be overridden in variants will state so, otherwise it's likely not.
 */
@@ -46,7 +48,7 @@ export class Game {
         this.jokerNumber = this.initializeJoker();                    
 
         this.deck = this.initializeDeck();
-        this.validationCards = this.deck._stack.slice().sort((a, b) => a.compareTo(b));;
+        this.validationCards = this.deck._stack.slice().sort(Card.compareCards);;
     }
 
 
@@ -113,20 +115,19 @@ export class Game {
 
 
 
-    //Copy all cards in-game to checkDeckm and check it against validationDeck; also, check all players' melds for validity.
-    //If anything is wrong, log to logger and set gameStatus to GAME_ENDED.
+    //Compare current cards against validationCards + validate melds; if anything wrong, log to logger and set gameStatus to GAME_ENDED.
     //Ideally called at the start of any gamestate-modifying player action function.
     validateGameState(){
+        //get deck and discard pile cards
         let checkCards = [];
         checkCards = checkCards.concat(this.deck.getCards());
         checkCards = checkCards.concat(this.deck.getDiscardPile());
 
+        //get meld cards and validate each one
         for (const player of this.players){
             checkCards = checkCards.concat(player._hand);
             for (const meld of player._melds){
                 if (meld) checkCards = checkCards.concat(meld._cards);
-
-                //if any meld isn't valid/complete, shutdown game
                 if (!meld.isComplete()) { 
                     this.logger.logWarning(`Invalid meld found: ${meld._cards}; shutting down game.`);
                     this.gameStatus = GameStatus.END_GAME;
@@ -136,14 +137,12 @@ export class Game {
         }
 
         //sort checkDeck and compare with validationDeck (as strings since they don't reference same cards).
-        //if not the same, cards were tampered with, so shut down game
-        checkCards.sort((a, b) => a.compareTo(b));
+        checkCards.sort(Card.compareCards);
         if (JSON.stringify(checkCards) != JSON.stringify((this.validationCards))){
             this.logger.logWarning(`Game state invalid, cards do not tally with initial deck. Shutting down game.`);
             this.gameStatus = GameStatus.END_GAME;
             return false;
         }
-
         return true;
     }
 
@@ -177,7 +176,7 @@ export class Game {
 
     //Starts the next round.
     nextRound(){
-        if (!this.validateGameState() || !this.validateGameStatus(GameStatus.END_GAME, 'nextRound')) return;
+        if (!this.validateGameState() || !this.validateGameStatus(GameStatus.ROUND_ENDED, 'nextRound()')) return;
         
         //increment round and, if applicable, increments jokerNumber
         this.currentRound++;
@@ -336,4 +335,10 @@ export class Game {
 
         this.gameStatus = GameStatus.PLAYER_TURN_ENDED;
     }
+
+
+
+    ////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////// Viewing functions ////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
 }

@@ -22,3 +22,16 @@ export const numbers =
                 12: 'Queen',
                 13: 'King'
             }
+
+export function suitNumberValue(suit, number){
+    let suitValue, numberValue;
+    
+    for (const val in suits) if (suits[val]==suit) suitValue = val;
+    for (const val in numbers) if (numbers[val]==number) numberValue = val;
+
+    if (suit=='Joker' || number=='Joker'){
+        suitValue = 0;
+        numberValue = 0;
+    }
+    return [suitValue, numberValue];
+}
