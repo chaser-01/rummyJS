@@ -1,6 +1,6 @@
 # rummyJS
 
-rummyJS is a package for modelling a game of Rummy, and its variants. Its features target realistic use cases for the package, including:
+rummyJS is a package for modelling a game of Rummy, and its variants. Its features target realistic use cases, including:
 - Standard player moves
 - Mid-game player additions/removals
 - Gamestate validation
