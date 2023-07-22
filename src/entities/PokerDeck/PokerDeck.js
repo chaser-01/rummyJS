@@ -23,15 +23,12 @@ export class PokerDeck extends Deck{
                     }
                 }
             }
-
             if (useJoker) {
                 for (let i=0; i<numberOfDecks*2; i++) cards.push(new Card('Joker', 'Joker'));
             }
-
             super(cards);
             this._discardPile = new Deck();
         }
-
 
         //If deck is empty after draw, or its size is lower than count, add the discard pile back; then draw as usual.
         draw(count){
@@ -39,24 +36,25 @@ export class PokerDeck extends Deck{
             return super.draw(count);
         }
 
-
         //returns discard pile
         getDiscardPile(){
             return this._discardPile._stack;
         }
 
+        //returns top card of discard pile
+        getTopOfDiscardPile(){
+            return this._discardPile._stack[0];
+        }
 
         //add a card to the discard pile
         addToDiscardPile(card){
             this._discardPile.addToTop(card);
         }
 
-
         //draw *count* cards from the discard pile
         drawFromDiscardPile(count){
             return this._discardPile.draw(count);
         }
-
 
         //puts discard pile back into the deck
         resetDiscardPile(){

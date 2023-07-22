@@ -48,7 +48,7 @@ export class Game {
         this.jokerNumber = this.initializeJoker();                    
 
         this.deck = this.initializeDeck();
-        this.validationCards = this.deck._stack.slice().sort(Card.compareCards);;
+        this.validationCards = this.deck._stack.slice().sort(Card.compareCardsSuitFirst);
     }
 
 
@@ -137,7 +137,7 @@ export class Game {
         }
 
         //sort checkDeck and compare with validationDeck (as strings since they don't reference same cards).
-        checkCards.sort(Card.compareCards);
+        checkCards.sort(Card.compareCardsSuitFirst);
         if (JSON.stringify(checkCards) != JSON.stringify((this.validationCards))){
             this.logger.logWarning(`Game state invalid, cards do not tally with initial deck. Shutting down game.`);
             this.gameStatus = GameStatus.END_GAME;
@@ -216,14 +216,19 @@ export class Game {
 
 
     //Sets a player as not playing (keeps his hands/melds); if it's the current player, advance to next player.
+    //TO DO: logging
     quitPlayer(playerIndex){
         if (!this.validateGameState()) return;
-
-        this.players[playerIndex]._playing = false;
+        
+        for (const player of this.players){
+            if (player._id == playerIndex) this.players[playerIndex]._playing = false;
+        }
         if (this.currentPlayerIndex === playerIndex){
             gameStatus = GameStatus.PLAYER_TURN_ENDED;
             this.nextPlayer();
         }
+
+        this.logger.logGameAction('?');
     }
 
 
@@ -231,7 +236,6 @@ export class Game {
     //TO DO: figure out logging
     addPlayer(playerId){
         if (!this.validateGameState()) return;
-
         this.players.push(new Player(this, playerId));
         this.logger.logGameAction('?');
     }
@@ -242,6 +246,33 @@ export class Game {
     //////// Player action functions (acts on player currentPlayerIndex) ///////
     ////////////////////////////////////////////////////////////////////////////
 
+    
+
+    //Sorts a player's hand by suit first, and places jokers at the highest; if no playerIndex specified, defaults to current player
+    //Note: No logging as the hand remains the same
+    sortHandBySuit(playerIndex = this.currentPlayerIndex){
+        if (!this.validateGameState()) return;
+
+        this.players[playerIndex]._hand.sort((a, b) => {
+            if (a.number == this.jokerNumber && b.number == this.jokerNumber) return Card.compareCardsSuitFirst(a, b);
+            if (a.number == this.jokerNumber) return 1;
+            if (b.number == this.jokerNumber) return -1;
+            return Card.compareCardsSuitFirst(a, b);
+        })
+    }
+
+    //Sorts a player's hand by number first, and places jokers at the highest; if no playerIndex specified, defaults to current player
+    //Note: No logging as the hand remains the same
+    sortHandByNumber(playerIndex = this.currentPlayerIndex){
+        if (!this.validateGameState()) return;
+
+        this.players[playerIndex]._hand.sort((a, b) => {
+            if (a.number == this.jokerNumber && b.number == this.jokerNumber) return Card.compareCardsNumberFirst(a, b);
+            if (a.number == this.jokerNumber) return 1;
+            if (b.number == this.jokerNumber) return -1;
+            return Card.compareCardsNumberFirst(a, b);
+        })
+    }
 
 
     //Draw *cardsToDraw* cards from deck and assigns to current player's hand, and set next gameStatus.
@@ -270,7 +301,7 @@ export class Game {
     }
 
 
-    //Attempt to create a meld; if invalid, log it. Accepts an array of indexes for the chosen cards.
+    //Attempt to create a meld; if invalid, log error and return. Accepts an array of indexes for the chosen cards.
     //TO DO: log it
     createMeld(indexArray){
         if (!this.validateGameState() || !this.validateGameStatus(GameStatus.PLAYER_TURN, 'createMeld()')) return;
@@ -333,11 +364,18 @@ export class Game {
 
 
     //End player turn and set gameStatus; cardIndex is the index of the card  which player will discard.
-    //TO DO
+    //TO DO: log it
     endTurn(cardIndex){
         if (!this.validateGameState() || !this.validateGameStatus(GameStatus.PLAYER_TURN, 'endTurn()')) return;
+        if (cardIndex >= this.players[this.currentPlayerIndex]._hand.length || !isNaN(cardIndex)){
+            this.logger.logWarning(`Invalid cardIndex: ${cardIndex}; can't end turn.`);
+            return;
+        }
 
+        let discardedCard = this.players[this.currentPlayerIndex]._hand.splice(cardIndex, 1);
+        this.deck.addToDiscardPile(discardedCard);
 
+        this.logger.logGameAction('?');
         this.gameStatus = GameStatus.PLAYER_TURN_ENDED;
     }
 
@@ -346,4 +384,29 @@ export class Game {
     ////////////////////////////////////////////////////////////////////////////
     ///////////////////////////// Viewing functions ////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
+
+
+
+    //Returns object with all information relevant to the current player
+    getGameInfoForPlayer(){
+        let gameInfo = {};
+
+        gameInfo.jokerNumber = this.jokerNumber;
+        gameInfo.deckSize = this.deck.remaining();
+        gameInfo.topDiscardCard = this.deck.getTopOfDiscardPile();
+
+        let player = {};
+        player.id = this.players[this.currentPlayerIndex]._id;
+        player.hand = this.players[this.currentPlayerIndex]._hand;
+        player.melds = this.players[this.currentPlayerIndex]._melds;
+
+        let tableMelds = {};
+        for (const player of this.players){
+            tableMelds[player._id] = player._melds;
+        }
+
+        gameInfo.currentPlayer = player;
+        gameInfo.tableMelds = tableMelds;
+        return gameInfo;
+    }
 }

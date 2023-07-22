@@ -1,6 +1,4 @@
 import { Card } from "../PokerDeck/Card.js";
-import {suits, numbers} from "../PokerDeck/suitsNumbers.js";
-
 
 /*
 Main function for checking validity of a meld, by checking if it's a sequence or set.

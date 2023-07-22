@@ -1,4 +1,4 @@
-import { suits, numbers, suitNumberValue } from './suitsNumbers.js';
+import { suitNumberValue } from './suitsNumbers.js';
 
 //Represents a singular card.
 export class Card {
@@ -7,15 +7,31 @@ export class Card {
         this.number = number;
     }
 
-    //card value for below sorting function
-    cardValue(){
+    
+    //card value prioritising suits
+    cardValueSuitFirst(){
         let suitValue, numberValue;
         [suitValue, numberValue] = suitNumberValue(this.suit, this.number);
         return suitValue*100 + numberValue;
     }
 
-    //pass this into sort() for an array of Cards
-    static compareCards(a, b) {
-        return a.cardValue() - b.cardValue();
+
+    //used for sorting an array of Cards, prioritising suits
+    static compareCardsSuitFirst(a, b) {
+        return a.cardValueSuitFirst() - b.cardValueSuitFirst();
+    }
+
+
+    //card value prioritising numbers; used for sorting a hand and looking for potential sequences
+    cardValueNumberFirst(){
+        let suitValue, numberValue;
+        [suitValue, numberValue] = suitNumberValue(this.suit, this.number);
+        return numberValue*100 + suitValue;
+    }
+
+
+    //used for sorting an array of Cards, prioritiing numbers
+    static compareCardsNumberFirst(a, b) {
+        return a.cardValueNumberFirst() - b.cardValueNumberFirst();
     }
 }
