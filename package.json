@@ -1,3 +1,5 @@
 {
-  "type": "module"
+  "type": "module",
+  "name": "rummyjs",
+  "version": "1.0.0"
 }

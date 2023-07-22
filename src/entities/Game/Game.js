@@ -210,7 +210,7 @@ export class Game {
         if (!this.validateGameState() || !this.validateGameStatus(GameStatus.PLAYER_TURN_ENDED, 'nextPlayer')) return;
 
         //if next player isn't playing or just joined (no cards in hand yet), go to the next next player
-        while (this.players[this.currentPlayerIndex+1].playing!=true || this.players[this.currentPlayerIndex+1]._hand==[]) this.currentPlayerIndex++;
+        while (this.players[this.currentPlayerIndex+1]._playing!=true || this.players[this.currentPlayerIndex+1]._hand==[]) this.currentPlayerIndex++;
         this.gameStatus = GameStatus.PLAYER_TO_DRAW;
     }
 
@@ -314,7 +314,7 @@ export class Game {
         let playerHandCopy = player._hand.slice();
         let meldCards = [];
         for (const index of indexSet){
-            if (!Number.isNaN(index) || index>player._hand.length){
+            if (isNaN(index) || index>player._hand.length){
                 this.logger.logWarning(`Invalid indexArray passed into createMeld at player: ${this.currentPlayerIndex}`);
                 return;
             }
@@ -363,11 +363,11 @@ export class Game {
     }
 
 
-    //End player turn and set gameStatus; cardIndex is the index of the card  which player will discard.
+    //End player turn and set gameStatus; cardIndex is the index of the card which player will discard.
     //TO DO: log it
     endTurn(cardIndex){
         if (!this.validateGameState() || !this.validateGameStatus(GameStatus.PLAYER_TURN, 'endTurn()')) return;
-        if (cardIndex >= this.players[this.currentPlayerIndex]._hand.length || !isNaN(cardIndex)){
+        if (cardIndex >= this.players[this.currentPlayerIndex]._hand.length || isNaN(cardIndex)){
             this.logger.logWarning(`Invalid cardIndex: ${cardIndex}; can't end turn.`);
             return;
         }
