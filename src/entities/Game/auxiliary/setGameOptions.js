@@ -6,7 +6,7 @@ Most work like so:
     -If the config doesn't specify any value/a useable value for that option, set it to a hardcoded value
     -Return the option
 
-Some functions, eg setCardsToDrawAndNumberOfDecks, may have additional logic to ensure the specified options are feasible etc.
+Some functions, eg setCardsToDealAndNumberOfDecks, may have additional logic to ensure the specified options are feasible etc.
 */
 
 
@@ -45,42 +45,42 @@ export function setCardsToDrawDiscardPile(config, cardsToDrawDiscardPile){
 
 
 /*
-Returns cardsToDraw and numberOfDecks options.
+Returns cardsToDeal and numberOfDecks options.
 Checks to see if total cards drawn exceeds the total deck size; if so, overrides the specified options.
-Checks other numberOfDecks, if given one doesn't specify a cardsToDraw in the config.
+Checks other numberOfDecks, if given one doesn't specify a cardsToDeal in the config.
 */
-export function setCardsToDrawAndNumberOfDecks(config, playersSize, cardsToDraw, numberOfDecks){
-    let setCardsToDraw, setNumberOfDecks;
+export function setCardsToDealAndNumberOfDecks(config, playersSize, cardsToDeal, numberOfDecks){
+    let setCardsToDeal, setNumberOfDecks;
 
     //if specified values are valid, return them
-    if (cardsToDraw!==0 && playersSize*cardsToDraw < numberOfDecks*52){
-        return [cardsToDraw, numberOfDecks];
+    if (cardsToDeal!==0 && playersSize*cardsToDeal < numberOfDecks*52){
+        return [cardsToDeal, numberOfDecks];
     }
 
-    //if cardsToDraw not specified, or no cardsToDraw found for the given numberOfDecks/given numberOfDecks and playersSize,
-    //then loop through other numberOfDecks to find existing cardsToDraw for the given playersSize, and use that.                                                                  
-    let cardsToDrawRules = config.cardsToDraw.decks;
-    if (numberOfDecks===undefined || !cardsToDrawRules[numberOfDecks] || !cardsToDrawRules[numberOfDecks].players[playersSize]){
-        for (const deckNo in cardsToDrawRules){
-            let cardsToDraw = cardsToDrawRules[deckNo].players[playersSize];
-            if (cardsToDraw){
-                setCardsToDraw = cardsToDraw;
+    //if cardsToDeal not specified, or no cardsToDeal found for the given numberOfDecks/given numberOfDecks and playersSize,
+    //then loop through other numberOfDecks to find existing cardsToDeal for the given playersSize, and use that.                                                                  
+    let cardsToDealRules = config.cardsToDeal.decks;
+    if (numberOfDecks===undefined || !cardsToDealRules[numberOfDecks] || !cardsToDealRules[numberOfDecks].players[playersSize]){
+        for (const deckNo in cardsToDealRules){
+            let cardsToDeal = cardsToDealRules[deckNo].players[playersSize];
+            if (cardsToDeal){
+                setCardsToDeal = cardsToDeal;
                 setNumberOfDecks = deckNo;
                 break;
             }
         }
 
-        //if no cardsToDraw found at all for playersSize, throw error
-        if (!setCardsToDraw || !setNumberOfDecks){
+        //if no cardsToDeal found at all for playersSize, throw error
+        if (!setCardsToDeal || !setNumberOfDecks){
             throw new Error('No amount of cards can be dealt for the amount of players given.');
         }
     }
 
-    //if cardsToDraw exists for given numberOfDecks and playersSize, return it
+    //if cardsToDeal exists for given numberOfDecks and playersSize, return it
     else{
-        setCardsToDraw = cardsToDrawRules[numberOfDecks].players[playersSize];
+        setCardsToDeal = cardsToDealRules[numberOfDecks].players[playersSize];
         setNumberOfDecks = numberOfDecks;
     }
-    return [setCardsToDraw, setNumberOfDecks];
+    return [setCardsToDeal, setNumberOfDecks];
 }
 

@@ -1,7 +1,7 @@
 {
     "useJoker": true,
     "useWildcard": false, 
-    "cardsToDraw": {
+    "cardsToDeal": {
         "decks": {
             "1": {
                 "players": {

@@ -67,8 +67,12 @@ async function main(){
     [players, options] = await getOptions();
     let playerIds = Array.from(Array(players), (_, index) => index+1);
     let game = new Game(playerIds, options);
+
+    console.log(game);
 }
 
+
+//execute
 main();
   
   

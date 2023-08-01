@@ -1,13 +1,13 @@
 export class Player{
     constructor(game, id){
-        this._game = game;
-        this._id = id;
-        this._hand = [];
-        this._melds = [];
-        this._playing = true;
+        this.game = game;
+        this.id = id;
+        this.hand = [];
+        this.melds = [];
+        this.playing = true;
     }
 
-    addToHand(cards) {this._hand = this._hand.concat(cards);}
-    addMeld(meld) {this._melds.push(meld);}
-    resetCards() {this._hand = []; this._melds = [];}
+    addToHand(cards) {this.hand = this.hand.concat(cards);}
+    addMeld(meld) {this.melds.push(meld);}
+    resetCards() {this.hand = []; this.melds = [];}
 }
