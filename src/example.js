@@ -1,38 +1,79 @@
 import { Game } from "./entities/Game/Game.js";
+import { GameStatus } from "./entities/Game/GameStatus.js";
+import { createInterface } from "readline";
 
-function yesNo(promptText){
-    let answer = prompt(promptText);
-    while (answer!='Y' || answer!='N') answer = prompt('Invalid; try again: ');
-    if (answer == 'Y') return true;
-    return false;
+const readline = createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
+  
+function getInput(prompt, validationCallback) {
+    return new Promise((resolve) => {
+      function ask() {
+        readline.question(prompt, (input) => {
+          input = input.trim();
+          const validatedInput = validationCallback(input);
+          resolve(validatedInput);
+        });
+      }
+      ask();
+    });
+  }
+  
+
+//gets options for the game
+async function getOptions() {
+const options = {};
+
+let players = await getInput("Enter the number of players (2-7, default: 2): ", (input) => {
+    const numPlayers = parseInt(input);
+    return (!isNaN(numPlayers) && numPlayers >= 2 && numPlayers <= 7) ? numPlayers : 2;
+});
+
+options.useWildcard = await getInput("Use wildcards? (Y/N, default: N): ", (input) => {
+    const lowerCaseInput = input.toLowerCase();
+    return (lowerCaseInput === 'y') ? true : (lowerCaseInput === 'n') ? false : undefined;
+});
+
+options.useJoker = await getInput("Use jokers? (Y/N, default: N): ", (input) => {
+    const lowerCaseInput = input.toLowerCase();
+    return (lowerCaseInput === 'y') ? true : (lowerCaseInput === 'n') ? false : undefined;
+});
+
+// Set only one of useJoker or useWildcard to true if both are attempted to be set as true
+if (options.useJoker && options.useWildcard) {
+    options.useWildcard = false;
+    console.log("useJoker and useWildcard cannot both be set to true. Setting useWildcard to false.");
 }
 
-//
+options.cardsToDrawDiscardPile = await getInput("Enter the number of cards to draw from the discard pile (integer, default: undefined): ", (input) => {
+    const numCards = parseInt(input);
+    return (!isNaN(numCards) && Number.isInteger(numCards)) ? numCards : undefined;
+});
 
-let players = prompt("How many players (2-7): ");
-while (isNaN(players) || players<2 || players>7){
-    players = prompt('Invalid; try again: ');
-}
-let playerIds = [];
-for (let i=0; i<players; i++) playerIds.push(i);
+options.cardsToDraw = await getInput("Enter the number of cards to draw (integer, default: undefined): ", (input) => {
+    const numCards = parseInt(input);
+    return (!isNaN(numCards) && Number.isInteger(numCards)) ? numCards : undefined;
+});
 
-let option = {};
-let optionBool = yesNo("Custom options? (use wildcard/joker, no. of decks, cards to draw etc) (Y/N): ");
-if (optionBool){
-    option.useWildcard = yesNo("Use wildcard? (Y/N): ");
-    option.useWildcard = yesNo("Use joker? (can't use alongside wildcard) (Y/N): ");
-
-    option.cardsToDraw = prompt("Cards to draw per turn (<=0 means default): ");
-    if (isNaN(option.cardsToDraw) || option.cardsToDraw<=0) option.cardsToDraw = undefined;
-
-    option.cardsToDrawDiscardPile = prompt("Cards to draw from discard pile (<=0 means default): ");
-    if (isNaN(option.cardsToDrawDiscardPile) || option.cardsToDrawDiscardPile<=0) option.cardsToDrawDiscardPile = undefined;
-    
-    option.numberOfDecks = prompt("Number of decks? (1 or 2): ");
-    if (isNaN(option.numberOfDecks) || option.numberOfDecks!=1 || option.numberOfDecks!=2) option.numberOfDecks = 1;
+readline.close();
+return [players, options];
 }
 
-console.log('Instantiating game...');
-let game = new Game(playerIds, options);
-game.nextRound();
 
+//game
+async function main(){
+    let players, options;
+    [players, options] = await getOptions();
+    let playerIds = Array.from(Array(players), (_, index) => index+1);
+    let game = new Game(playerIds, options);
+}
+
+main();
+  
+  
+  
+  
+  
+  
+  

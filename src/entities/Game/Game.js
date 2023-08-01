@@ -1,13 +1,16 @@
 import { GameStatus } from "./GameStatus.js";
+import { GameScore } from "./GameScore.js";
 import { Logger } from "../Logger/Logger.js";
 import { Player } from "../Player/Player.js";
 import { PokerDeck } from "../PokerDeck/PokerDeck.js";
 import { Card } from "../PokerDeck/Card.js";
 import { Meld } from "../Meld/Meld.js";
+
 import { loadConfigFile } from "./loadConfig.js";
 import { setCardsToDrawAndNumberOfDecks, setCardsToDrawDiscardPile, setJokerOption, setWildcardOption } from "./setGameOptions.js";
-import { GameScore } from "./GameScore.js";
 
+import * as path from 'path';
+import { fileURLToPath } from 'url';
 
 
 /*
@@ -22,8 +25,7 @@ Functions are divided into:
 Functions that may need to be overridden in variants will state so, otherwise it's likely not.
 */
 export class Game {
-    title = "rummy"; //variant title; also used for loading the correct variant config file
-    config = loadConfigFile(this.title);
+    title = "Rummy"; //variant title; also used for loading the correct variant config file
 
     /*  
     Initializes the following:
@@ -35,12 +37,14 @@ export class Game {
     This shouldn't be overridden in variants, since it might break initialization flow. Only override functions within it.
     */
     constructor(playerIds, options={}){
+        this.config = this.loadConfig();
+         
         this.logger = new Logger(this);
 
         this.players = this.initializePlayers(playerIds);
-        
-        this.initializeOptions(options); 
 
+        this.initializeOptions(options);
+        
         this.score = this.initializeScore(this.players);
         this.currentPlayerIndex = 0;
         this.currentRound = -1;
@@ -59,8 +63,17 @@ export class Game {
 
 
 
+    //Loads the config file for this variation (must be in same directory and same name as title property)
+    loadConfig(){
+        const __filename = fileURLToPath(import.meta.url);
+        const __dirname = path.dirname(__filename);
+        return loadConfigFile(__dirname, this.title);
+    }
+
+
     /*
     Initializes (optional) options from an options object; compares to config, where applicable.
+    Since jokers and wildcards shouldn't? be used simultaneously, if they are both enabled, disable useWildcard option.
     Variants that require additional options can override this function, then super it afterwards.
     */
     initializeOptions(options){
@@ -69,7 +82,6 @@ export class Game {
         this.cardsToDrawDiscardPile = setCardsToDrawDiscardPile(this.config, options.cardsToDrawDiscardPile);
         [this.cardsToDraw, this.numberOfDecks] = setCardsToDrawAndNumberOfDecks(this.config, this.players.length, options.cardsToDraw, options.numberOfDecks);
 
-        //Since jokers and wildcards can't (shouldn't?) be used simultaneously, if they are both enabled, disable useWildcard.
         if (this.useJoker && this.useWildcard) this.useWildcard = false;
     }
 
