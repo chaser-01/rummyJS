@@ -345,22 +345,20 @@ export class Game {
     createMeld(indexArray){
         if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN, 'createMeld()')) return false;
 
-        //Create indexSet from indexArray, so that all indexes (and thus cards) are unique
-        //Create temp copy of player hand, to copy back if the meld is invalid.
+        //Create a set, indexSet,  from indexArray (ensures card indexes are unique, since a set's elements will be unique)
         //Then, check that each index is valid number and isn't larger than player's hand size, then draw from hand and place into meld.
         let indexSet = new Set(indexArray);
         let player = this.players[this.currentPlayerIndex];
-        let playerHandCopy = player.hand.slice();
         let meldCards = [];
         for (const index of indexSet){
             if (isNaN(index) || index>player.hand.length){
                 this.logger.logWarning(`Invalid indexArray passed into createMeld at player: ${this.currentPlayerIndex}`);
-                return;
+                return false;
             }
-            meldCards.push(player.hand.splice(index, 1));
+            meldCards.concat(player.hand.slice(index, 1));
         } 
 
-        //Create the meld and check validity with isComplete(). 
+        //Create the meld object, and check validity with isComplete(). 
         //If valid, add the meld and remove cards from hand; else, reset player hand to before with the copy
         let meld = new Meld(meldCards, this.jokerNumber);
         if (meld.isComplete()){
@@ -389,7 +387,7 @@ export class Game {
         let potentialMeld = this.players[meldOwnerIndex].melds[meldIndex];
         let addingCard = this.players[this.currentPlayerIndex].hand[addingCardIndex];
 
-        if (potentialMeld.addCard(addingCard)){
+        if (potentialMeld.addCard(addingCard, this.jokerNumber)){
             this.players[meldOwnerIndex].melds[meldIndex] = potentialMeld;
             this.players[this.currentPlayerIndex].hand.splice(addingCardIndex, 1);
             this.logger.logGameAction('?'); //TO DO

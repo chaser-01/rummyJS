@@ -5,6 +5,9 @@ export class Meld {
         if (this.isComplete(cards, jokerNumber)){
             this.cards = cards;
         }
+        else{
+            this.cards = [];
+        }
     }
 
     /*

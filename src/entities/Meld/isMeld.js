@@ -7,7 +7,7 @@ Outputs a true/false.
 */
 export function isMeld(cards, jokerNumber=0) {
 
-    if ((isValidSequence(cards, jokerNumber) || isValidSet(cards, jokerNumber)) && cards.length>=3) {
+    if (cards.length>=3 && (isValidSequence(cards, jokerNumber) || isValidSet(cards, jokerNumber))) {
       return true;
     } else {
       return false;
