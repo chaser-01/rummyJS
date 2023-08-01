@@ -250,7 +250,6 @@ export class Game {
 
 
     //Sets a player as not playing (keeps his hands/melds); if it's the current player, advance to next player.
-    //TO DO: logging
     quitPlayer(playerIndex){
         if (!this.validateGameState()) return false;
         
@@ -262,17 +261,16 @@ export class Game {
             this.nextPlayer();
         }
 
-        this.logger.logGameAction('?');
+        this.logger.logGameAction('?'); //TO DO
         return true;
     }
 
 
     //Add a player to game. 
-    //TO DO: figure out logging
     addPlayer(playerId){
         if (!this.validateGameState()) return;
         this.players.push(new Player(this, playerId));
-        this.logger.logGameAction('?');
+        this.logger.logGameAction('?'); //TO DO
     }
 
 
@@ -313,35 +311,32 @@ export class Game {
 
 
     //Draw *cardsToDeal* cards from deck and assigns to current player's hand, and set next gameStatus.
-    //TO DO: log it
     drawFromDeck(){
         if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TO_DRAW, 'drawFromDeck()')) return false;
 
         let drawnCards = this.deck.draw(this.cardsToDeal);
         this.players[this.currentPlayerIndex].hand.push(drawnCards);
 
-        this.logger.logGameAction('?');
+        this.logger.logGameAction('?'); //TO DO
         this.gameStatus = this.GameStatus.PLAYER_TURN;
         return true;
     }
 
 
     //Draw *cardsToDrawFromDiscardPile* cards from discard pile and assigns to current player's hand, and set next gameStatus.
-    //TO DO: log it
     drawFromDiscardPile(){
         if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TO_DRAW, 'drawFromDiscardPile()')) return false;
 
         let drawnCards = this.deck.discardPile.draw(this.cardsToDrawDiscardPile);
         this.players[this.currentPlayerIndex].hand.push(drawnCards);
 
-        this.logger.logGameAction('?');
+        this.logger.logGameAction('?'); //TO DO
         this.gameStatus = this.GameStatus.PLAYER_TURN;
         return true;
     }
 
 
     //Attempt to create a meld; if invalid, log error and return. Accepts an array of indexes for the chosen cards.
-    //TO DO: log it
     createMeld(indexArray){
         if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN, 'createMeld()')) return false;
 
@@ -352,7 +347,7 @@ export class Game {
         let meldCards = [];
         for (const index of indexSet){
             if (isNaN(index) || index>player.hand.length){
-                this.logger.logWarning(`Invalid indexArray passed into createMeld at player: ${this.currentPlayerIndex}`);
+                this.logger.logWarning(`Invalid indexArray passed into createMeld by player: ${this.players[currentPlayerIndex]}`);
                 return false;
             }
             meldCards.concat(player.hand.slice(index, 1));
@@ -369,7 +364,7 @@ export class Game {
     
         else{
             player.hand = playerHandCopy;
-            this.logger.logWarning('?'); //TO DO
+            this.logger.logWarning(`Invalid meld created by player: ${this.players[currentPlayerIndex]}`); //TO DO
             return false;
         }
     }
@@ -395,7 +390,9 @@ export class Game {
         }
 
         else{
-            this.logger.logWarning('?');
+            this.logger.logWarning(
+                `Player ${this.players[currentPlayerIndex]} failed to add card ${addingCardIndex} to meld ${meldIndex} of player ${this.players[meldOwnerIndex]}`
+                );
             return false;
         }
     }
@@ -408,8 +405,8 @@ export class Game {
         -meldIndex: Index of the meld in the player's array of melds
         -replacedCardIndex: Index of card in target player's targeted meld, to be replaced (should be a joker)
     */
-    replaceMeldJoker(replacingCardIndex, meldOwnerIndex, meldIndex, replacedCardIndex){
-        if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN, 'replaceMeldJoker()')) return;
+    replaceMeldCard(replacingCardIndex, meldOwnerIndex, meldIndex, replacedCardIndex){
+        if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN, 'replaceMeldCard()')) return;
 
         let potentialMeld = this.players[meldOwnerIndex].melds[meldIndex];
         let replacingCard = this.players[this.currentPlayerIndex].hand[replacingCardIndex];
@@ -422,7 +419,9 @@ export class Game {
         }
 
         else{
-            this.logger.logWarning('?');
+            this.logger.logWarning(
+                `Player ${this.players[currentPlayerIndex]} failed to replace card ${addingCardIndex} to meld ${meldIndex} of player ${this.players[meldOwnerIndex]}`
+            );
             return false;
         }
     }

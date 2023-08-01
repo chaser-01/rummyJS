@@ -5,7 +5,7 @@ export class Logger{
         this.warningLog = {};
     }
 
-    logWarning(message){
+    logWarning(functionName, argumentArr, notes){
         console.log(message);
         //TO DO: some way of adding this to the log
     }
