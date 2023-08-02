@@ -32,6 +32,17 @@ export function setJokerOption(config, useWildcard){
     return setUseWildcard;
 }
 
+//Returns cardsToDraw option.
+export function setCardsToDraw(config, cardsToDraw){
+    let setCardsToDraw;
+    if (!cardsToDraw){
+        if (!config.cardsToDraw) setCardsToDraw = 1;
+        else setCardsToDraw = config.cardsToDraw;
+    }
+    else setCardsToDraw = cardsToDraw;
+    return setCardsToDraw;
+}
+
 //Returns cardsToDrawDiscardPile option.
 export function setCardsToDrawDiscardPile(config, cardsToDrawDiscardPile){
     let setCardsToDrawDiscardPile;

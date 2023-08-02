@@ -8,7 +8,7 @@ import { Meld } from "../Meld/Meld.js";
 
 //some auxiliary functions
 import { loadConfigFile } from "./auxiliary/loadConfig.js";
-import { setCardsToDealAndNumberOfDecks, setCardsToDrawDiscardPile, setJokerOption, setWildcardOption } from "./auxiliary/setGameOptions.js";
+import { setCardsToDealAndNumberOfDecks, setCardsToDraw, setCardsToDrawDiscardPile, setJokerOption, setWildcardOption } from "./auxiliary/setGameOptions.js";
 
 //path functions, for getting config file regardless of variant location
 import * as path from 'path';
@@ -50,30 +50,29 @@ export class Game {
       });
 
 
-    /*  
-    Initializes the following:
-        -A logger for handling game errors and tracking game actions.
-        -Player objects for tracking players
-        -General properties for handling game logic and flow.
-        -The deck + a sorted copy of its cards as validationCards, for use in validateGameState()
-
+    
+    /*
+    Initializes important properties and stuff for playing/tracking the game.
     This shouldn't be overridden in variants, since it might break initialization flow. Only override functions within it.
     */
-    constructor(playerIds, options={}){
+    constructor(playerIds, options={}, gameId=undefined){
+        //optional gameId to differentiate between games
+        if (gameId) this.gameId = gameId;
+        //config for checking variant-specific stuff
         this.config = this.loadConfig();
-         
+        //logging for actions taken + errors/warnings
         this.logger = new Logger(this);
-
+        //array of Player objects
         this.players = this.initializePlayers(playerIds);
-
+        //optional options for customizing game
         this.initializeOptions(options);
-        
+        //game tracking properties
         this.score = this.initializeScore(this.players);
         this.currentPlayerIndex = 0;
         this.currentRound = -1;
         this.gameStatus = this.GameStatus.ROUND_ENDED;
+        //deck + joker as indicated in options/config, also copy of deck for gamestate verification later on
         this.jokerNumber = this.initializeJoker();                    
-
         this.deck = this.initializeDeck();
         this.validationCards = this.deck._stack.slice().sort(Card.compareCardsSuitFirst);
     }
@@ -102,6 +101,7 @@ export class Game {
     initializeOptions(options){
         this.useWildcard = setWildcardOption(this.config, options.useWildcard);
         this.useJoker = setJokerOption(this.config, options.useJoker);
+        this.cardsToDraw = setCardsToDraw(this.config, options.cardsToDraw);
         this.cardsToDrawDiscardPile = setCardsToDrawDiscardPile(this.config, options.cardsToDrawDiscardPile);
         [this.cardsToDeal, this.numberOfDecks] = setCardsToDealAndNumberOfDecks(this.config, this.players.length, options.cardsToDeal, options.numberOfDecks);
 
@@ -136,7 +136,7 @@ export class Game {
     }
 
 
-    //Initializes jokerNumber.
+    //Initializes jokerNumber, which can be a printed joker OR a wildcard from the deck (depends on options/config)
     initializeJoker(){
         if (this.useJoker) return 'Joker';
         else if (this.useWildcard) return this.deck.numbers[1];
@@ -264,7 +264,7 @@ export class Game {
             this.nextPlayer();
         }
 
-        this.logger.logGameAction('quitPlayer', undefined, {playerIndex});
+        this.logger.logGameAction('quitPlayer', undefined, {playerIndex}, undefined);
         return true;
     }
 
@@ -273,7 +273,7 @@ export class Game {
     addPlayer(playerId){
         if (!this.validateGameState()) return;
         this.players.push(new Player(this, playerId));
-        this.logger.logGameAction('addPlayer', undefined, {playerId}); 
+        this.logger.logGameAction('addPlayer', undefined, {playerId}, undefined); 
     }
 
 
@@ -315,14 +315,14 @@ export class Game {
     }
 
 
-    //Draw *cardsToDeal* cards from deck and assigns to current player's hand, and set next gameStatus.
+    //Draw *cardsToDraw* cards from deck and assigns to current player's hand, and set next gameStatus.
     drawFromDeck(){
-        if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TO_DRAW, 'drawFromDeck()')) return false;
+        if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TO_DRAW)) return false;
 
-        let drawnCards = this.deck.draw(this.cardsToDeal);
+        let drawnCards = this.deck.draw(this.cardsToDraw);
         this.players[this.currentPlayerIndex].hand.push(drawnCards);
 
-        this.logger.logGameAction('?'); //TO DO
+        this.logger.logGameAction('drawFromDeck', this.players[this.currentPlayerIndex].id, undefined, `Card drawn: ${drawnCards}`); 
         this.gameStatus = this.GameStatus.PLAYER_TURN;
         return true;
     }
@@ -335,7 +335,7 @@ export class Game {
         let drawnCards = this.deck.discardPile.draw(this.cardsToDrawDiscardPile);
         this.players[this.currentPlayerIndex].hand.push(drawnCards);
 
-        this.logger.logGameAction('?'); //TO DO
+        this.logger.logGameAction('drawFromDiscardPile', this.players[this.currentPlayerIndex].id, undefined, `Card drawn: ${drawnCards}`);
         this.gameStatus = this.GameStatus.PLAYER_TURN;
         return true;
     }
@@ -346,25 +346,25 @@ export class Game {
         if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN)) return false;
 
         //Create a set, indexSet,  from indexArray (ensures card indexes are unique, since a set's elements will be unique)
-        //Then, check that each index is valid number and isn't larger than player's hand size, then draw from hand and place into meld.
+        //Get copy of player's hand, to copy back if invalid meld/card index
+        //Then, check that each index is valid, then draw corresponding card from hand and place into meld.
         let indexSet = new Set(indexArray);
         let player = this.players[this.currentPlayerIndex];
+        let playerHandCopy = player.hand;
         let meldCards = [];
         for (const index of indexSet){
             if (isNaN(index) || index>player.hand.length){
                 this.logger.logWarning('createMeld', this.players[this.currentPlayerIndex].id, {indexArray}, 'Invalid index array');
+                player.hand = playerHandCopy;
                 return false;
             }
-            meldCards.concat(player.hand.slice(index, 1));
+            meldCards.concat(player.hand.splice(index, 1));
         } 
 
-        //Create the meld object, and check validity with isComplete(). 
-        //If valid, add the meld and remove cards from hand; else, reset player hand to before with the copy
+        //Create the meld object, and check if meld is valid.
+        //If so, add the meld to player's melds; else, reset the player's hand
         let meld = new Meld(meldCards, this.jokerNumber);
         if (meld.isComplete()){
-            this.logger.logGameAction(
-                
-            ); //TO DO
             player.addMeld(meld);
             this.logger.logGameAction('createMeld', this.players[this.currentPlayerIndex].id, {indexArray});
             return true;
@@ -372,6 +372,7 @@ export class Game {
     
         else{
             this.logger.logWarning('createMeld', this.players[this.currentPlayerIndex].id, {indexArray}, 'Invalid meld');
+            player.hand = playerHandCopy;
             return false;
         }
     }
@@ -392,11 +393,8 @@ export class Game {
         if (potentialMeld.addCard(addingCard, this.jokerNumber)){
             this.players[meldOwnerIndex].melds[meldIndex] = potentialMeld;
             this.players[this.currentPlayerIndex].hand.splice(addingCardIndex, 1);
-            this.logger.logGameAction(
-                'addToMeld',
-                this.players[this.currentPlayerIndex].id,
-                {addingCardIndex, meldOwnerIndex, meldIndex}
-                );
+
+            this.logger.logGameAction('addToMeld', this.players[this.currentPlayerIndex].id, {addingCardIndex, meldOwnerIndex, meldIndex});
             return true;
         }
 
@@ -454,14 +452,14 @@ export class Game {
         if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN)) return false;
 
         if (cardIndex >= this.players[this.currentPlayerIndex].hand.length || isNaN(cardIndex)){
-            this.logger.logWarning('endTurn', this.players[this.currentPlayerIndex].id, {'cardIndex': cardIndex}, undefined);
+            this.logger.logWarning('endTurn', this.players[this.currentPlayerIndex].id, {cardIndex}, undefined);
             return false;
         }
 
         let discardedCard = this.players[this.currentPlayerIndex].hand.splice(cardIndex, 1);
         this.deck.addToDiscardPile(discardedCard);
 
-        this.logger.logGameAction('endTurn', this.players[this.currentPlayerIndex].id,{'cardIndex': cardIndex}, undefined);
+        this.logger.logGameAction('endTurn', this.players[this.currentPlayerIndex].id, {cardIndex}, undefined);
         this.gameStatus = this.GameStatus.PLAYER_TURN_ENDED;
         return true;
     }

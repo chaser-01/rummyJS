@@ -40,6 +40,7 @@ export class Logger{
         this.actionLog[this.currentRound].push(logObject);
     }   
 
+    
     //TO DO: eventually write out the logs to a file or something
     writeOut(){
         

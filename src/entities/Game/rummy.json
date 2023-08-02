@@ -1,6 +1,8 @@
 {
     "useJoker": true,
     "useWildcard": false, 
+    "cardsToDraw": 1,
+    "cardsToDrawDiscardPile": 1,
     "cardsToDeal": {
         "decks": {
             "1": {

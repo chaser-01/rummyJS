@@ -1,5 +1,4 @@
 import { Game } from "./entities/Game/Game.js";
-import { GameStatus } from "./entities/Game/GameStatus.js";
 import { createInterface } from "readline";
 
 const readline = createInterface({
@@ -68,7 +67,8 @@ async function main(){
     let playerIds = Array.from(Array(players), (_, index) => index+1);
     let game = new Game(playerIds, options);
 
-    console.log(game);
+    game.nextRound();
+    console.log(game.getGameInfoForPlayer().currentPlayer.hand);
 }
 
 
