@@ -6,6 +6,8 @@ const readline = createInterface({
     output: process.stdout
 });
   
+
+//generic fn for getting inputs
 function getInput(prompt, validationCallback) {
     return new Promise((resolve) => {
       function ask() {
@@ -54,28 +56,42 @@ options.cardsToDraw = await getInput("Enter the number of cards to draw (integer
     const numCards = parseInt(input);
     return (!isNaN(numCards) && Number.isInteger(numCards)) ? numCards : undefined;
 });
-
 return [players, options];
 }
 
 
-//game
+//print game info
+function printGameInfo(game){
+    let gameInfo = game.getGameInfoForPlayer();
+    console.log('-----');
+    console.log(`Joker: ${gameInfo.jokerNumber}`);
+    console.log(`Deck size: ${gameInfo.deckSize}`);
+    console.log(`Top discard pile card: ${gameInfo.topDiscardCard}`);
+    console.log(`Current player (${gameInfo.currentPlayer.id}) hand:${gameInfo.currentPlayer.hand.map(card => ` ${card}`)}`);;
+    console.log(`Table melds:${Object.keys(gameInfo.tableMelds).map(player => ` ${player}: ${gameInfo.tableMelds.player}`)}`);
+    console.log('-----');
+    return;
+}
+
+
+//main game fn
 async function main(){
+    //get options and create game
     let players, options;
     [players, options] = await getOptions();
     let playerIds = Array.from(Array(players), (_, index) => index+1);
     let game = new Game(playerIds, options);
     game.nextRound();
 
+    //main game loop
     while (game.gameStatus !== game.GameStatus.END_GAME){
-        let gameInfo = game.getGameInfoForPlayer();
-        let playerHand = `Player ${gameInfo.currentPlayer.id}'s hand: `;
-        game.getGameInfoForPlayer().currentPlayer.hand.forEach(card => playerHand = playerHand+card+' ');
-        console.log(playerHand+'\n');
-
+        printGameInfo(game);
         while (game.gameStatus == game.GameStatus.PLAYER_TURN){
-            let playerOption = await getInput(`
-                Your next action:
+            let playerOption;
+
+            playerOption = await getInput(
+                `Your next action:
+                    0: Show game info
                     1: Sort hand
                     2: Create a meld
                     3: Add to an existing meld
@@ -84,30 +100,37 @@ async function main(){
 
                     Input: `,
                 input => {
-                if (isNaN(input) || input<1 || input>5) {
+                if (isNaN(parseInt(input)) || input<0 || input>5) {
                     console.log('Invalid input; please try again.');
                     return -1;
                 }   
-                return input;
+                return parseInt(input);
             });
 
             switch(playerOption){
+                //show table info
+                case 0:
+                    printGameInfo(game);
+                    break;
+
+
                 //Sort player hand
                 case 1:
-                    await getInput(`
-                        Sort by: 
+                    await getInput(
+                        `Sort by: 
                         1: Suit
                         2: Number
                         Input: `, 
                         input => {
-                        if (isNaN(input) || input!==1 || input!==2) {
-                            console.log('Invalid input; please try again.');
+                            input = parseInt(input);
+                            if (isNaN(input) || (input!==1 && input!==2)) {
+                                console.log('Invalid input; please try again.');
+                                return;
+                            }
+                            if (input===1) game.sortHandBySuit();
+                            if (input===2) game.sortHandByNumber();
+                            console.log(`Sorted. Your hand: ${game.getGameInfoForPlayer().currentPlayer.hand.map(card=>` ${card}`)}`);
                             return;
-                        }
-                        if (input===1) game.sortHandBySuit();
-                        if (input===2) game.sortHandByNumber();
-                        console.log('Sorted.');
-                        return;
                     });
                     break;
                 
@@ -118,7 +141,7 @@ async function main(){
                     let indexArray = [];
                     while (cardIndex!=-1){
                         cardIndex = await getInput('Input index of the card you wish to add to the meld (-1 to stop): ', input => {
-                            if (isNaN(input)){
+                            if (isNaN(parseInt(input))){
                                 console.log('Invalid input; please try again.');
                                 return;
                             }
@@ -139,10 +162,8 @@ async function main(){
 
                     if (indexArray){
                         if (game.createMeld(indexArray)){
-                            gameInfo = game.getGameInfoForPlayer();
-                            let melds = '';
-                            gameInfo.currentPlayer.melds.forEach(meld => melds+`${meld}\n`);
-                            console.log(`Valid meld created! Your current melds: ${str}`);
+                            console.log('Valid meld created! Current game state: ');
+                            printGameInfo(game);
                         }
                         else console.log(`Inputted cards don't form a valid meld.`);
                     }
@@ -151,16 +172,112 @@ async function main(){
 
                 //Add to an existing meld
                 case 3:
+                    let gameInfo = game.getGameInfoForPlayer();
+                    if (!gameInfo.melds){
+                        console.log('No melds at the moment.');
+                        break;
+                    }
+
+                    console.log(`Table melds:${Object.keys(gameInfo.tableMelds).map(player => ` ${player}: ${gameInfo.tableMelds.player}`)}`);
+
                     cardIndex=0;
                     while (cardIndex!=-1){
-                        cardIndex = await getInput('')
+                        cardIndex = await getInput('Choose your card to add to a meld: ', input => {
+                            input = parseInt(input);
+                            if (isNaN(input) || input>gameInfo.currentPlayer.hand.length || input<0){
+                                console.log('Invalid index. Try again.');
+                                return -1;
+                            }
+                            return input;
+                        });
+                    }
+
+                    meldOwnerIndex=0;
+                    while (meldOwnerIndex!=-1){
+                        meldOwnerIndex = await getInput('Choose the target player: ', input => {
+                            input = parseInt(input);
+                            if (isNaN(input) || input>Object.keys(gameInfo.tableMelds).length || input<0){
+                                console.log('Invalid index. Try again.');
+                                return -1;
+                            }
+                            return input;
+                        });
+                    }
+
+                    meldIndex=0;
+                    while (meldIndex!=-1){
+                        meldIndex = await getInput('Choose the target meld: ', input => {
+                            input = parseInt(input);
+                            if (isNaN(input) || input>gameInfo.tableMelds[meldOwnerIndex].length || input<0){
+                                console.log('Invalid index. Try again.');
+                                return -1;
+                            }
+                            return input;
+                        })
+                    
+                    if (game.addToMeld(cardIndex, meldOwnerIndex, meldIndex)){
+                        console.log('Successfully added! Current game state: ');
+                        printGameInfo();
+                    }  
+                    else{
+                        console.log('Invalid addition to a meld.');
                     }
                     break;
                 
 
                 //Replace an existing meld's card
                 case 4:
-                    break;
+                    gameInfo = game.getGameInfoForPlayer();
+                    if (!gameInfo.melds){
+                        console.log('No melds at the moment.');
+                        break;
+                    }
+
+                    console.log(`Table melds:${Object.keys(gameInfo.tableMelds).map(player => ` ${player}: ${gameInfo.tableMelds.player}`)}`);
+
+                    cardIndex=0;
+                    while (cardIndex!=-1){
+                        cardIndex = await getInput('Choose your card to add to a meld: ', input => {
+                            input = parseInt(input);
+                            if (isNaN(input) || input>gameInfo.currentPlayer.hand.length || input<0){
+                                console.log('Invalid index. Try again.');
+                                return -1;
+                            }
+                            return input;
+                        });
+                    }
+
+                    meldOwnerIndex=0;
+                    while (meldOwnerIndex!=-1){
+                        meldOwnerIndex = await getInput('Choose the target player: ', input => {
+                            input = parseInt(input);
+                            if (isNaN(input) || input>Object.keys(gameInfo.tableMelds).length || input<0){
+                                console.log('Invalid index. Try again.');
+                                return -1;
+                            }
+                            return input;
+                        });
+                    }
+
+                    meldIndex=0;
+                    while (meldIndex!=-1){
+                        meldIndex = await getInput('Choose the target meld: ', input => {
+                            input = parseInt(input);
+                            if (isNaN(input) || input>gameInfo.tableMelds[meldOwnerIndex].length || input<0){
+                                console.log('Invalid index. Try again.');
+                                return -1;
+                            }
+                            return input;
+                        })
+                    
+                    if (game.addToMeld(cardIndex, meldOwnerIndex, meldIndex)){
+                        console.log('Successfully added! Current game state: ');
+                        printGameInfo();
+                    }  
+                    else{
+                        console.log('Invalid addition to a meld.');
+                    }
+                    break;;
                 
 
                 //End turn (must input a card to discard)

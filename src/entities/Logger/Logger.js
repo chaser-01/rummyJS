@@ -17,7 +17,7 @@ export class Logger{
 
     //logs warnings/errors; if no playerId, assume it's a game action, so set playerId as 'GAME'
     logWarning(functionName, playerId='GAME', args=undefined, notes=''){
-        let logObject;
+        let logObject = {};
 
         logObject.functionName = functionName;
         logObject.playerId = playerId;
@@ -30,7 +30,7 @@ export class Logger{
 
     //logs actions occurring in the game; if no playerId, assume it's a game action, so set playerId as 'GAME'
     logGameAction(functionName, playerId='GAME', args=undefined, notes=undefined){
-        let logObject;
+        let logObject = {};
 
         logObject.functionName = functionName;
         logObject.playerId = playerId;
