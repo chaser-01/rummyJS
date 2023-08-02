@@ -23,6 +23,14 @@ export const numbers =
                 13: 'King'
             }
 
+export const suitsText = 
+            {
+                'Hearts': '♥',
+                'Diamonds': '♦',
+                'Clubs': '♣',
+                'Spades': '♠'
+            }
+
 export function suitNumberValue(suit, number){
     let suitValue, numberValue;
     

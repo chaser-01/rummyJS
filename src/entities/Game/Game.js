@@ -52,26 +52,36 @@ export class Game {
 
     
     /*
-    Initializes important properties and stuff for playing/tracking the game.
+    Initializes important properties and stuff for playing/tracking the game:
+        -gameId: Optional game ID for differentiating games
+        -config: Variant configuration, to be referenced if no/invalid options were passed in
+        -logger: Used for logging game/player actions, and errors/warnings
+        -players: Array of players, each with an ID from playerIds array
+        -initializeOptions: Function to initialize more game-specific properties, from (optional) options + config
+        -score: Used for tracking and calculating player scores
+        -currentPlayerIndex/currentRound: Self explanatory
+        -gameStatus: Uses GameStatus enum, to track/enforce currently takeable game/player actions
+        -jokerNumber: Tracks the round joker, which can replace any card in a meld; can be printed joker OR a deck wildcard
+        -deck/validationCards: Deck + a copy, for validating gamestate later on
+
     This shouldn't be overridden in variants, since it might break initialization flow. Only override functions within it.
     */
     constructor(playerIds, options={}, gameId=undefined){
-        //optional gameId to differentiate between games
         if (gameId) this.gameId = gameId;
-        //config for checking variant-specific stuff
+
         this.config = this.loadConfig();
-        //logging for actions taken + errors/warnings
+
         this.logger = new Logger(this);
-        //array of Player objects
+
         this.players = this.initializePlayers(playerIds);
-        //optional options for customizing game
+
         this.initializeOptions(options);
-        //game tracking properties
+
         this.score = this.initializeScore(this.players);
         this.currentPlayerIndex = 0;
         this.currentRound = -1;
         this.gameStatus = this.GameStatus.ROUND_ENDED;
-        //deck + joker as indicated in options/config, also copy of deck for gamestate verification later on
+
         this.jokerNumber = this.initializeJoker();                    
         this.deck = this.initializeDeck();
         this.validationCards = this.deck._stack.slice().sort(Card.compareCardsSuitFirst);
@@ -222,17 +232,17 @@ export class Game {
             player.addToHand(this.deck.draw(this.cardsToDeal));
         }
 
-        //if not first round, use Score object to find previous round winner so they can start first
-        if (this.currentRound!==0){
-            //TO DO
-            this.gameStatus = this.GameStatus.PLAYER_TO_DRAW;
-        }
-
-        //else give the first player an extra card, and skip their draw
-        else{
+        //if it's the first round, deal extra card to first player + let them start
+        if (this.currentRound===0){
             this.players[0].addToHand(this.deck.draw(1));
             this.gameStatus = this.GameStatus.PLAYER_TURN;
         }   
+
+        //else, find the previous winner and deal them extra card + let them start
+        else{
+            //TO DO: get last round winner
+            this.gameStatus = this.GameStatus.PLAYER_TO_DRAW;
+        }
 
         //create next round in logger
         this.logger.logNewRound(this.currentRound);

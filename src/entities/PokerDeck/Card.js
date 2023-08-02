@@ -1,4 +1,4 @@
-import { suitNumberValue } from './suitsNumbers.js';
+import { suitNumberValue, suitsText } from './suitsNumbers.js';
 
 //Represents a singular card.
 export class Card {
@@ -33,5 +33,11 @@ export class Card {
     //used for sorting an array of Cards, prioritiing numbers
     static compareCardsNumberFirst(a, b) {
         return a.cardValueNumberFirst() - b.cardValueNumberFirst();
+    }
+
+
+    //custom string representation for a Card
+    toString(){
+        return `${suitsText[this.suit]}${this.number}`;
     }
 }

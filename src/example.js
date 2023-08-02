@@ -55,7 +55,6 @@ options.cardsToDraw = await getInput("Enter the number of cards to draw (integer
     return (!isNaN(numCards) && Number.isInteger(numCards)) ? numCards : undefined;
 });
 
-readline.close();
 return [players, options];
 }
 
@@ -66,9 +65,117 @@ async function main(){
     [players, options] = await getOptions();
     let playerIds = Array.from(Array(players), (_, index) => index+1);
     let game = new Game(playerIds, options);
-
     game.nextRound();
-    console.log(game.getGameInfoForPlayer().currentPlayer.hand);
+
+    while (game.gameStatus !== game.GameStatus.END_GAME){
+        let gameInfo = game.getGameInfoForPlayer();
+        let playerHand = `Player ${gameInfo.currentPlayer.id}'s hand: `;
+        game.getGameInfoForPlayer().currentPlayer.hand.forEach(card => playerHand = playerHand+card+' ');
+        console.log(playerHand+'\n');
+
+        while (game.gameStatus == game.GameStatus.PLAYER_TURN){
+            let playerOption = await getInput(`
+                Your next action:
+                    1: Sort hand
+                    2: Create a meld
+                    3: Add to an existing meld
+                    4: Replace an existing meld's card
+                    5: End turn
+
+                    Input: `,
+                input => {
+                if (isNaN(input) || input<1 || input>5) {
+                    console.log('Invalid input; please try again.');
+                    return -1;
+                }   
+                return input;
+            });
+
+            switch(playerOption){
+                //Sort player hand
+                case 1:
+                    await getInput(`
+                        Sort by: 
+                        1: Suit
+                        2: Number
+                        Input: `, 
+                        input => {
+                        if (isNaN(input) || input!==1 || input!==2) {
+                            console.log('Invalid input; please try again.');
+                            return;
+                        }
+                        if (input===1) game.sortHandBySuit();
+                        if (input===2) game.sortHandByNumber();
+                        console.log('Sorted.');
+                        return;
+                    });
+                    break;
+                
+
+                //Create a meld
+                case 2:
+                    let cardIndex;
+                    let indexArray = [];
+                    while (cardIndex!=-1){
+                        cardIndex = await getInput('Input index of the card you wish to add to the meld (-1 to stop): ', input => {
+                            if (isNaN(input)){
+                                console.log('Invalid input; please try again.');
+                                return;
+                            }
+                            else{
+                                if (cardIndex>gameInfo.currentPlayer.hand.length){
+                                    console.log('Input is larger than hand size!!');
+                                    return;
+                                }
+                                if (indexArray.find(element => element===input)){
+                                    console.log('Input already in current meld!!');
+                                    return;
+                                }
+                                return input;
+                            }
+                        })
+                        if (cardIndex!==-1) indexArray.push(cardIndex);
+                    }
+
+                    if (indexArray){
+                        if (game.createMeld(indexArray)){
+                            gameInfo = game.getGameInfoForPlayer();
+                            let melds = '';
+                            gameInfo.currentPlayer.melds.forEach(meld => melds+`${meld}\n`);
+                            console.log(`Valid meld created! Your current melds: ${str}`);
+                        }
+                        else console.log(`Inputted cards don't form a valid meld.`);
+                    }
+                    break;
+                
+
+                //Add to an existing meld
+                case 3:
+                    cardIndex=0;
+                    while (cardIndex!=-1){
+                        cardIndex = await getInput('')
+                    }
+                    break;
+                
+
+                //Replace an existing meld's card
+                case 4:
+                    break;
+                
+
+                //End turn (must input a card to discard)
+                case 5:
+                    break;
+                
+
+                //Goes back to input
+                default:
+                    break;
+            }
+
+        }
+    }
+    
 }
 
 

@@ -60,4 +60,10 @@ export class Meld {
         }
         return false;
    }
+
+   //String representation of a meld
+   toString(){
+        let meldStr = '';
+        this.cards.forEach(card => meldStr + `${card} `)
+   }
 }
