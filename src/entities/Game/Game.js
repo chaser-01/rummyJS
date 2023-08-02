@@ -5,12 +5,16 @@ import { Player } from "../Player/Player.js";
 import { PokerDeck } from "../PokerDeck/PokerDeck.js";
 import { Card } from "../PokerDeck/Card.js";
 import { Meld } from "../Meld/Meld.js";
+
 //some auxiliary functions
 import { loadConfigFile } from "./auxiliary/loadConfig.js";
 import { setCardsToDealAndNumberOfDecks, setCardsToDrawDiscardPile, setJokerOption, setWildcardOption } from "./auxiliary/setGameOptions.js";
-//for getting config file regardless of variant location
+
+//path functions, for getting config file regardless of variant location
 import * as path from 'path';
 import { fileURLToPath } from 'url';
+
+
 
 
 /*
@@ -28,7 +32,7 @@ export class Game {
     //variant title; also used for loading the correct variant config file
     title = "Rummy"; 
 
-
+    
     /*
     "enum" that represents game statuses; used for tracking what game actions should occur next:
         -PLAYER_TO_DRAW: Player must draw from deck/discard pile
@@ -231,8 +235,10 @@ export class Game {
         else{
             this.players[0].addToHand(this.deck.draw(1));
             this.gameStatus = this.GameStatus.PLAYER_TURN;
-        }
+        }   
 
+        //create next round in logger
+        this.logger.logNewRound(this.currentRound);
         return true;
     }
 
@@ -261,7 +267,7 @@ export class Game {
             this.nextPlayer();
         }
 
-        this.logger.logGameAction('?'); //TO DO
+        this.logger.logGameAction('quitPlayer', undefined, {playerIndex}); //TO DO
         return true;
     }
 
@@ -270,7 +276,7 @@ export class Game {
     addPlayer(playerId){
         if (!this.validateGameState()) return;
         this.players.push(new Player(this, playerId));
-        this.logger.logGameAction('?'); //TO DO
+        this.logger.logGameAction('addPlayer', undefined, {playerId}); //TO DO
     }
 
 
@@ -347,7 +353,7 @@ export class Game {
         let meldCards = [];
         for (const index of indexSet){
             if (isNaN(index) || index>player.hand.length){
-                this.logger.logWarning(`Invalid indexArray passed into createMeld by player: ${this.players[currentPlayerIndex]}`);
+                this.logger.logWarning('createMeld', this.players[this.currentPlayerIndex].id, {indexArray}, 'Invalid index array');
                 return false;
             }
             meldCards.concat(player.hand.slice(index, 1));
@@ -357,14 +363,16 @@ export class Game {
         //If valid, add the meld and remove cards from hand; else, reset player hand to before with the copy
         let meld = new Meld(meldCards, this.jokerNumber);
         if (meld.isComplete()){
+            this.logger.logGameAction(
+                
+            ); //TO DO
             player.addMeld(meld);
-            this.logger.logGameAction('?'); //TO DO
+            this.logger.logGameAction('createMeld', this.players[this.currentPlayerIndex].id, {indexArray});
             return true;
         }
     
         else{
-            player.hand = playerHandCopy;
-            this.logger.logWarning(`Invalid meld created by player: ${this.players[currentPlayerIndex]}`); //TO DO
+            this.logger.logWarning('createMeld', this.players[this.currentPlayerIndex].id, {indexArray}, 'Invalid meld');
             return false;
         }
     }
@@ -377,7 +385,7 @@ export class Game {
         -meldIndex: Index of the meld in the player's array of melds
     */
     addToMeld(addingCardIndex, meldOwnerIndex, meldIndex){
-        if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN, 'addToMeld()')) return;
+        if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN, 'addToMeld')) return;
 
         let potentialMeld = this.players[meldOwnerIndex].melds[meldIndex];
         let addingCard = this.players[this.currentPlayerIndex].hand[addingCardIndex];
@@ -385,13 +393,20 @@ export class Game {
         if (potentialMeld.addCard(addingCard, this.jokerNumber)){
             this.players[meldOwnerIndex].melds[meldIndex] = potentialMeld;
             this.players[this.currentPlayerIndex].hand.splice(addingCardIndex, 1);
-            this.logger.logGameAction('?'); //TO DO
+            this.logger.logGameAction(
+                'addToMeld',
+                this.players[this.currentPlayerIndex].id,
+                {addingCardIndex, meldOwnerIndex, meldIndex}
+                );
             return true;
         }
 
         else{
             this.logger.logWarning(
-                `Player ${this.players[currentPlayerIndex]} failed to add card ${addingCardIndex} to meld ${meldIndex} of player ${this.players[meldOwnerIndex]}`
+                'addToMeld',
+                this.players[this.currentPlayerIndex].id,
+                {addingCardIndex, meldOwnerIndex, meldIndex},
+                'Invalid meld addition'
                 );
             return false;
         }
@@ -406,7 +421,7 @@ export class Game {
         -replacedCardIndex: Index of card in target player's targeted meld, to be replaced (should be a joker)
     */
     replaceMeldCard(replacingCardIndex, meldOwnerIndex, meldIndex, replacedCardIndex){
-        if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN, 'replaceMeldCard()')) return;
+        if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN, 'replaceMeldCard')) return;
 
         let potentialMeld = this.players[meldOwnerIndex].melds[meldIndex];
         let replacingCard = this.players[this.currentPlayerIndex].hand[replacingCardIndex];
@@ -414,13 +429,21 @@ export class Game {
         if (potentialMeld.replaceCard(replacingCard, replacingIndex, this.jokerNumber)){
             this.players[meldOwnerIndex].melds[meldIndex] = potentialMeld;
             this.players[this.currentPlayerIndex].hand.splice(replacingCardIndex, 1);
-            this.logger.logGameAction('?');
+
+            this.logger.logGameAction(
+                'replaceMeldCard',
+                this.players[this.currentPlayerIndex].id,
+                {replacingCardIndex, meldOwnerIndex, meldIndex, replacedCardIndex}
+                );
             return true;
         }
 
         else{
             this.logger.logWarning(
-                `Player ${this.players[currentPlayerIndex]} failed to replace card ${addingCardIndex} to meld ${meldIndex} of player ${this.players[meldOwnerIndex]}`
+                'replaceMeldCard',
+                this.players[this.currentPlayerIndex].id,
+                {replacingCardIndex, meldOwnerIndex, meldIndex, replacedCardIndex},
+                'Invalid card replacement'
             );
             return false;
         }
@@ -428,19 +451,18 @@ export class Game {
 
 
     //End player turn and set gameStatus; cardIndex is the index of the card which player will discard.
-    //TO DO: log it
     endTurn(cardIndex){
         if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN, 'endTurn()')) return false;
 
         if (cardIndex >= this.players[this.currentPlayerIndex].hand.length || isNaN(cardIndex)){
-            this.logger.logWarning(`Invalid cardIndex: ${cardIndex}; can't end turn.`);
+            this.logger.logWarning('endTurn', this.players[this.currentPlayerIndex].id, {'cardIndex': cardIndex}, undefined);
             return false;
         }
 
         let discardedCard = this.players[this.currentPlayerIndex].hand.splice(cardIndex, 1);
         this.deck.addToDiscardPile(discardedCard);
 
-        this.logger.logGameAction('?');
+        this.logger.logGameAction('endTurn', this.players[this.currentPlayerIndex].id,{'cardIndex': cardIndex}, undefined);
         this.gameStatus = this.GameStatus.PLAYER_TURN_ENDED;
         return true;
     }
