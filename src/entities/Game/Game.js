@@ -32,7 +32,7 @@ export class Game {
     //variant title; also used for loading the correct variant config file
     title = "Rummy"; 
 
-    
+
     /*
     "enum" that represents game statuses; used for tracking what game actions should occur next:
         -PLAYER_TO_DRAW: Player must draw from deck/discard pile
@@ -164,7 +164,7 @@ export class Game {
             for (const meld of player.melds){
                 if (meld) checkCards = checkCards.concat(meld.cards);
                 if (!meld.isComplete()) { 
-                    this.logger.logWarning(`Invalid meld found: ${meld.cards}; shutting down game.`);
+                    this.logger.logWarning('validateGameState', undefined, undefined, `Player ${player.id} has invalid meld: ${meld.cards}`);
                     this.gameStatus = this.GameStatus.END_GAME;
                     return false;
                 }
@@ -174,7 +174,7 @@ export class Game {
         //sort checkDeck and compare with validationDeck (as strings since they don't reference same cards).
         checkCards.sort(Card.compareCardsSuitFirst);    
         if (JSON.stringify(checkCards) != JSON.stringify((this.validationCards))){
-            this.logger.logWarning(`Game state invalid, cards do not tally with initial deck. Shutting down game.`);
+            this.logger.logWarning('validateGameState', undefined, undefined, 'Invalid game state'); 
             this.gameStatus = this.GameStatus.END_GAME;
             return false;
         }
@@ -182,12 +182,9 @@ export class Game {
     }
 
 
-    //Simply checks that the current gameStatus is correct, and logs with the calling function if not.
-    validateGameStatus(intendedGameStatus, functionName){
-        if (intendedGameStatus !== this.gameStatus){
-            this.logger.logWarning(`Can't call ${functionName} due to game status ${this.gameStatus.description}`);
-            return false;   
-        }
+    //Simply checks that the current gameStatus is correct
+    validateGameStatus(intendedGameStatus){
+        if (intendedGameStatus !== this.gameStatus) return false;
         return true;
     }
 
@@ -211,7 +208,7 @@ export class Game {
 
     //Starts the next round.
     nextRound(){
-        if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.ROUND_ENDED, 'nextRound()')) return false;
+        if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.ROUND_ENDED)) return false;
         
         //increment round and, if applicable, increments jokerNumber
         this.currentRound++;
@@ -246,9 +243,9 @@ export class Game {
     //Goes to the next player.
     //Note: No logging as it will be implied by logging of the next player's actions anyway
     nextPlayer(){
-        if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN_ENDED, 'nextPlayer')) return false;
+        if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN_ENDED)) return false;
 
-        //if next player isn't playing or just joined (no cards in hand yet), go to the next next player
+        //while next player isn't playing or just joined (ie no cards in hand yet), go to the next next player
         while (this.players[this.currentPlayerIndex+1].playing!=true || this.players[this.currentPlayerIndex+1].hand==[]) this.currentPlayerIndex++;
         this.gameStatus = this.GameStatus.PLAYER_TO_DRAW;
         return true;
@@ -267,7 +264,7 @@ export class Game {
             this.nextPlayer();
         }
 
-        this.logger.logGameAction('quitPlayer', undefined, {playerIndex}); //TO DO
+        this.logger.logGameAction('quitPlayer', undefined, {playerIndex});
         return true;
     }
 
@@ -276,7 +273,7 @@ export class Game {
     addPlayer(playerId){
         if (!this.validateGameState()) return;
         this.players.push(new Player(this, playerId));
-        this.logger.logGameAction('addPlayer', undefined, {playerId}); //TO DO
+        this.logger.logGameAction('addPlayer', undefined, {playerId}); 
     }
 
 
@@ -288,7 +285,6 @@ export class Game {
     
 
     //Sorts a player's hand by suit first, and places jokers at the highest; if no playerIndex specified, defaults to current player
-    //Note: No logging as the hand remains the same
     sortHandBySuit(playerIndex = this.currentPlayerIndex){
         if (!this.validateGameState()) return false;
 
@@ -298,11 +294,12 @@ export class Game {
             if (b.number == this.jokerNumber) return -1;
             return Card.compareCardsSuitFirst(a, b);
         })
+
+        this.logger.logGameAction('sortHandBySuit', this.players[playerIndex].id, undefined, undefined);
         return true;
     }
 
     //Sorts a player's hand by number first, and places jokers at the highest; if no playerIndex specified, defaults to current player
-    //Note: No logging as the hand remains the same
     sortHandByNumber(playerIndex = this.currentPlayerIndex){
         if (!this.validateGameState()) return false;
 
@@ -312,6 +309,8 @@ export class Game {
             if (b.number == this.jokerNumber) return -1;
             return Card.compareCardsNumberFirst(a, b);
         })
+
+        this.logger.logGameAction('sortHandByNumber', this.players[playerIndex].id, undefined, undefined);
         return true;
     }
 
@@ -331,7 +330,7 @@ export class Game {
 
     //Draw *cardsToDrawFromDiscardPile* cards from discard pile and assigns to current player's hand, and set next gameStatus.
     drawFromDiscardPile(){
-        if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TO_DRAW, 'drawFromDiscardPile()')) return false;
+        if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TO_DRAW)) return false;
 
         let drawnCards = this.deck.discardPile.draw(this.cardsToDrawDiscardPile);
         this.players[this.currentPlayerIndex].hand.push(drawnCards);
@@ -344,7 +343,7 @@ export class Game {
 
     //Attempt to create a meld; if invalid, log error and return. Accepts an array of indexes for the chosen cards.
     createMeld(indexArray){
-        if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN, 'createMeld()')) return false;
+        if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN)) return false;
 
         //Create a set, indexSet,  from indexArray (ensures card indexes are unique, since a set's elements will be unique)
         //Then, check that each index is valid number and isn't larger than player's hand size, then draw from hand and place into meld.
@@ -385,7 +384,7 @@ export class Game {
         -meldIndex: Index of the meld in the player's array of melds
     */
     addToMeld(addingCardIndex, meldOwnerIndex, meldIndex){
-        if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN, 'addToMeld')) return;
+        if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN)) return;
 
         let potentialMeld = this.players[meldOwnerIndex].melds[meldIndex];
         let addingCard = this.players[this.currentPlayerIndex].hand[addingCardIndex];
@@ -421,7 +420,7 @@ export class Game {
         -replacedCardIndex: Index of card in target player's targeted meld, to be replaced (should be a joker)
     */
     replaceMeldCard(replacingCardIndex, meldOwnerIndex, meldIndex, replacedCardIndex){
-        if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN, 'replaceMeldCard')) return;
+        if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN)) return;
 
         let potentialMeld = this.players[meldOwnerIndex].melds[meldIndex];
         let replacingCard = this.players[this.currentPlayerIndex].hand[replacingCardIndex];
@@ -452,7 +451,7 @@ export class Game {
 
     //End player turn and set gameStatus; cardIndex is the index of the card which player will discard.
     endTurn(cardIndex){
-        if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN, 'endTurn()')) return false;
+        if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN)) return false;
 
         if (cardIndex >= this.players[this.currentPlayerIndex].hand.length || isNaN(cardIndex)){
             this.logger.logWarning('endTurn', this.players[this.currentPlayerIndex].id, {'cardIndex': cardIndex}, undefined);
