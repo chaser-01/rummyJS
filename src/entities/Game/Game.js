@@ -247,12 +247,9 @@ export class Game {
     
 
 
-    //Simply sets game status to input
+    //Simply sets game status to input GameStatus
     setGameStatus(gameStatus){
-        if (gameStatus){ //TO DO: check if gameStatus is a GameStatus, 
-
-            return false;
-        }
+        if (!Object.keys(this.GameStatus).find(gameStatus)) return false;
         this.gameStatus = gameStatus;
         return true;
     }
@@ -316,19 +313,22 @@ export class Game {
     }
 
 
-    //Sets a player as not playing (keeps his hands/melds); if it's the current player, end their turn and advance to next player.
+    //Sets a player as not playing (keeps his hands/melds).
+    //Calls checkGameEnded to see if game can still continue; if not, ends the game and returns.
+    //If the current player quit, end their turn and advance to next player.
     quitPlayer(playerIndex){
         if (!this.validateGameState()) return false;
         
         for (const player of this.players){
             if (player.id == playerIndex) this.players[playerIndex].playing = false;
+            if (this.checkGameEnded()) return true;
         }
         if (this.currentPlayerIndex === playerIndex){
             this.setGameStatus(this.GameStatus.PLAYER_TURN_ENDED);
             this.nextPlayer();
         }
 
-        this.logger.logGameAction('quitPlayer', undefined, {playerIndex}, undefined);
+        this.logger.logGameAction('quitPlayer', this.players[playerIndex].id, {playerIndex}, undefined);
         return true;
     }
 
@@ -337,7 +337,14 @@ export class Game {
     addPlayer(playerId){
         if (!this.validateGameState()) return;
         this.players.push(new Player(this, playerId));
-        this.logger.logGameAction('addPlayer', undefined, {playerId}, undefined); 
+        this.logger.logGameAction('addPlayer', playerId, {playerId}, undefined); 
+    }
+
+
+    //Forces ending the game
+    //TO DO
+    forceEndGame(){
+
     }
 
 
@@ -393,8 +400,11 @@ export class Game {
 
 
     //Draw *cardsToDrawFromDiscardPile* cards from discard pile and assigns to current player's hand, and set next gameStatus.
+    //If insufficient cards in discard pile, return false.
     drawFromDiscardPile(){
         if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TO_DRAW)) return false;
+
+        if (this.deck.discardPile.remaining() <= this.cardsToDrawDiscardPile) return false;
 
         let drawnCards = this.deck.discardPile.draw(this.cardsToDrawDiscardPile);
         this.players[this.currentPlayerIndex].hand.push(drawnCards);
