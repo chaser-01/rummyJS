@@ -52,18 +52,7 @@ export class Game {
 
     
     /*
-    Initializes important properties and stuff for playing/tracking the game:
-        -gameId: Optional game ID for differentiating games
-        -config: Variant configuration, to be referenced if no/invalid options were passed in
-        -logger: Used for logging game/player actions, and errors/warnings
-        -players: Array of players, each with an ID from playerIds array
-        -initializeOptions: Function to initialize more game-specific properties, from (optional) options + config
-        -score: Used for tracking and calculating player scores
-        -currentPlayerIndex/currentRound: Self explanatory
-        -gameStatus: Uses GameStatus enum, to track/enforce currently takeable game/player actions
-        -jokerNumber: Tracks the round joker, which can replace any card in a meld; can be printed joker OR a deck wildcard
-        -deck/validationCards: Deck + a copy, for validating gamestate later on
-
+    Initializes important properties and stuff for playing/tracking the game.
     This shouldn't be overridden in variants, since it might break initialization flow. Only override functions within it.
     */
     constructor(playerIds, options={}, gameId=undefined){
@@ -75,15 +64,22 @@ export class Game {
 
         this.players = this.initializePlayers(playerIds);
 
-        this.initializeOptions(options);
+        this.initialOptions = options;
+        [
+        this.useWildcard,
+        this.useJoker,
+        this.cardsToDraw,
+        this.cardsToDrawDiscardPile,
+        this.cardsToDeal, 
+        this.numberOfDecks
+        ] = this.initializeOptions(this.initialOptions);
 
         this.score = this.initializeScore(this.players);
         this.currentPlayerIndex = 0;
-        this.currentRound = -1;
+        this.currentRound = 0;
         this.gameStatus = this.GameStatus.ROUND_ENDED;
-
-        this.jokerNumber = this.initializeJoker();                    
-        this.deck = this.initializeDeck();
+                
+        [this.deck, this.jokerNumber] = this.initializeDeckAndJokerNumber();
         this.validationCards = this.deck._stack.slice().sort(Card.compareCardsSuitFirst);
     }
 
@@ -104,18 +100,28 @@ export class Game {
 
 
     /*
-    Initializes (optional) options from an options object; compares to config, where applicable.
+    Initializes (optional) and returns options from an options object; compares to config, where applicable.
     Since jokers and wildcards shouldn't be used simultaneously, disable useWildcard option if they were both enabled.
     Variants that require additional options can override this function, then super it afterwards.
     */
     initializeOptions(options){
-        this.useWildcard = setWildcardOption(this.config, options.useWildcard);
-        this.useJoker = setJokerOption(this.config, options.useJoker);
-        this.cardsToDraw = setCardsToDraw(this.config, options.cardsToDraw);
-        this.cardsToDrawDiscardPile = setCardsToDrawDiscardPile(this.config, options.cardsToDrawDiscardPile);
-        [this.cardsToDeal, this.numberOfDecks] = setCardsToDealAndNumberOfDecks(this.config, this.players.length, options.cardsToDeal, options.numberOfDecks);
+        let useWildcard = setWildcardOption(this.config, options.useWildcard);
+        let useJoker = setJokerOption(this.config, options.useJoker);
+        let cardsToDraw = setCardsToDraw(this.config, options.cardsToDraw);
+        let cardsToDrawDiscardPile = setCardsToDrawDiscardPile(this.config, options.cardsToDrawDiscardPile);
+        let cardsToDeal, numberOfDecks;
+        [cardsToDeal, numberOfDecks] = setCardsToDealAndNumberOfDecks(this.config, this.players.length, options.cardsToDeal, options.numberOfDecks);
 
         if (this.useJoker && this.useWildcard) this.useWildcard = false;
+
+        return [
+            useWildcard,
+            useJoker,
+            cardsToDraw,
+            cardsToDrawDiscardPile,
+            cardsToDeal, 
+            numberOfDecks
+            ]
     }
 
 
@@ -129,14 +135,6 @@ export class Game {
     }
 
 
-    //Initializes and returns a deck.
-    initializeDeck(){
-        let deck = new PokerDeck(this.numberOfDecks, this.useJoker);
-        deck.shuffle();
-        return deck;
-    }
-
-
     /*
     Returns a new score object for storing/calculating scores for players.
     Variants that have different scoring systems should implement their own score subclasses, and override this function to instantiate them.
@@ -146,12 +144,18 @@ export class Game {
     }
 
 
-    //Initializes jokerNumber, which can be a printed joker OR a wildcard from the deck (depends on options/config)
-    initializeJoker(){
-        if (this.useJoker) return 'Joker';
-        else if (this.useWildcard) return this.deck.numbers[1];
+    //Initializes and returns a deck and joker/wildcard if applicable; only called upon class initialization
+    initializeDeckAndJokerNumber(){
+        let deck = new PokerDeck(this.numberOfDecks, this.useJoker);
+        let jokerNumber;
+        if (this.useJoker) jokerNumber = 'Joker';
+
+        //wildcard number is currentRound+1 % numbers of the deck
+        else if (this.useWildcard) jokerNumber = deck.numbers[this.currentRound+1 % Object.keys(deck.numbers).length];
+        deck.shuffle();
+        return [deck, jokerNumber];
     }
-    
+
 
 
     ////////////////////////////////////////////////////////////////////////////
@@ -216,24 +220,33 @@ export class Game {
 
 
 
-    //Starts the next round.
+    //Does stuff to start next round
     nextRound(){
         if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.ROUND_ENDED)) return false;
-        
-        //increment round and, if applicable, increments jokerNumber
-        this.currentRound++;
-        this.currentPlayerIndex=0;
-        if (this.useWildcard) this.jokerNumber = this.deck.numbers[(this.currentRound+1)%Object.keys(this.deck.numbers).length];
 
-        //reset deck and deal cards
-        this.deck = this.initializeDeck();
+        this.currentRound++;
+
+        //get config again, since, if no. of players changed, current configuration may not be useable
+        [
+        this.useWildcard,
+        this.useJoker,
+        this.cardsToDraw,
+        this.cardsToDrawDiscardPile,
+        this.cardsToDeal, 
+        this.numberOfDecks
+        ] = this.initializeOptions(this.initialOptions);
+
+        //reset deck and get the next jokerNumber (if wildcard, it will increment)
+        [this.deck, this.jokerNumber] = this.initializeDeckAndJokerNumber();
+        
+        //deal cards
         for (const player of this.players){
             player.resetCards();
             player.addToHand(this.deck.draw(this.cardsToDeal));
         }
 
         //if it's the first round, deal extra card to first player + let them start
-        if (this.currentRound===0){
+        if (this.currentRound===1){
             this.players[0].addToHand(this.deck.draw(1));
             this.gameStatus = this.GameStatus.PLAYER_TURN;
         }   
@@ -244,7 +257,6 @@ export class Game {
             this.gameStatus = this.GameStatus.PLAYER_TO_DRAW;
         }
 
-        //create next round in logger
         this.logger.logNewRound(this.currentRound);
         return true;
     }

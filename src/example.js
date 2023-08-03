@@ -180,8 +180,8 @@ async function main(){
 
                     console.log(`Table melds:${Object.keys(gameInfo.tableMelds).map(player => ` ${player}: ${gameInfo.tableMelds.player}`)}`);
 
-                    cardIndex=0;
-                    while (cardIndex!=-1){
+                    cardIndex=-1;
+                    while (cardIndex==-1){
                         cardIndex = await getInput('Choose your card to add to a meld: ', input => {
                             input = parseInt(input);
                             if (isNaN(input) || input>gameInfo.currentPlayer.hand.length || input<0){
@@ -192,8 +192,8 @@ async function main(){
                         });
                     }
 
-                    meldOwnerIndex=0;
-                    while (meldOwnerIndex!=-1){
+                    meldOwnerIndex=-1;
+                    while (meldOwnerIndex==-1){
                         meldOwnerIndex = await getInput('Choose the target player: ', input => {
                             input = parseInt(input);
                             if (isNaN(input) || input>Object.keys(gameInfo.tableMelds).length || input<0){
@@ -204,8 +204,8 @@ async function main(){
                         });
                     }
 
-                    meldIndex=0;
-                    while (meldIndex!=-1){
+                    meldIndex=-1;
+                    while (meldIndex==-1){
                         meldIndex = await getInput('Choose the target meld: ', input => {
                             input = parseInt(input);
                             if (isNaN(input) || input>gameInfo.tableMelds[meldOwnerIndex].length || input<0){
@@ -214,6 +214,7 @@ async function main(){
                             }
                             return input;
                         })
+                    }
                     
                     if (game.addToMeld(cardIndex, meldOwnerIndex, meldIndex)){
                         console.log('Successfully added! Current game state: ');
@@ -236,7 +237,7 @@ async function main(){
                     console.log(`Table melds:${Object.keys(gameInfo.tableMelds).map(player => ` ${player}: ${gameInfo.tableMelds.player}`)}`);
 
                     cardIndex=0;
-                    while (cardIndex!=-1){
+                    while (cardIndex==-1){
                         cardIndex = await getInput('Choose your card to add to a meld: ', input => {
                             input = parseInt(input);
                             if (isNaN(input) || input>gameInfo.currentPlayer.hand.length || input<0){
@@ -247,8 +248,8 @@ async function main(){
                         });
                     }
 
-                    meldOwnerIndex=0;
-                    while (meldOwnerIndex!=-1){
+                    meldOwnerIndex=-1;
+                    while (meldOwnerIndex==-1){
                         meldOwnerIndex = await getInput('Choose the target player: ', input => {
                             input = parseInt(input);
                             if (isNaN(input) || input>Object.keys(gameInfo.tableMelds).length || input<0){
@@ -259,8 +260,8 @@ async function main(){
                         });
                     }
 
-                    meldIndex=0;
-                    while (meldIndex!=-1){
+                    meldIndex=-1;
+                    while (meldIndex==-1){
                         meldIndex = await getInput('Choose the target meld: ', input => {
                             input = parseInt(input);
                             if (isNaN(input) || input>gameInfo.tableMelds[meldOwnerIndex].length || input<0){
@@ -269,19 +270,47 @@ async function main(){
                             }
                             return input;
                         })
+                    }
+
+                    let replacedCardIndex=-1;
+                    while (replacedCardIndex==-1){
+                        replacedCardIndex = await getInput(`Input index of the target card in the meld: `, input => {
+                            input = parseInt(input);
+                            if (isNaN(input) || input.gameInfo.tableMelds[meldOwnerIndex][meldIndex].length || input<0){
+                                console.log('Invalid index. Try again.');
+                                return -1;
+                            }
+                            return input;
+                        })
+                    }
                     
-                    if (game.addToMeld(cardIndex, meldOwnerIndex, meldIndex)){
+                    if (game.replaceMeldCard(cardIndex, meldOwnerIndex, meldIndex, replacedCardIndex)){
                         console.log('Successfully added! Current game state: ');
                         printGameInfo();
                     }  
                     else{
                         console.log('Invalid addition to a meld.');
                     }
-                    break;;
+                    break;
                 
 
                 //End turn (must input a card to discard)
                 case 5:
+                    cardIndex = -1;
+                    while (cardIndex==-1){
+                        cardIndex = await getInput('Enter index of card in your hand to discard: ', input => {
+                            input = parseInt(input);
+                            if (isNaN(input) || input>game.getGameInfoForPlayer().currentPlayer.hand.length || input<0){
+                                console.log('Invalid index. Try again.');
+                                return -1;
+                            }
+                            return input;
+                        })
+                    }
+                    if (game.endTurn(cardIndex)){
+                        console.log('Turn ended. Next player!');
+                    }
+                    else console.log('Error occurred. Please try again.');
                     break;
                 
 

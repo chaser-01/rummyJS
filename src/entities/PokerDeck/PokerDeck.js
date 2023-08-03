@@ -7,8 +7,8 @@ import { Deck } from './Deck.js';
 export class PokerDeck extends Deck{
 
         //so they're accessed as part of PokerDeck
-        static suits = suits;
-        static numbers = numbers;
+        suits = suits;
+        numbers = numbers;
 
         /*
         Accepts numberOfDecks, the number of poker decks to put in this deck; defaults to 1.
@@ -22,7 +22,7 @@ export class PokerDeck extends Deck{
                         cards.push(new Card(suits[x], numbers[y]));
                     }
                 }
-            }
+            }   
             if (useJoker) {
                 for (let i=0; i<numberOfDecks*2; i++) cards.push(new Card('Joker', 'Joker'));
             }
