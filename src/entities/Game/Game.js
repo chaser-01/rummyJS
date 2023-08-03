@@ -179,17 +179,17 @@ export class Game {
                 if (meld) checkCards = checkCards.concat(meld.cards);
                 if (!meld.isComplete()) { 
                     this.logger.logWarning('validateGameState', undefined, undefined, `Player ${player.id} has invalid meld: ${meld.cards}`);
-                    this.gameStatus = this.GameStatus.END_GAME;
+                    this.setGameStatus(this.GameStatus.END_GAME);
                     return false;
                 }
             }
         }
 
-        //sort checkDeck and compare with validationDeck (as strings since they don't reference same cards).
+        //sort checkDeck and compare with validationDeck (as strings, since they don't reference the same card objects).
         checkCards.sort(Card.compareCardsSuitFirst);    
         if (JSON.stringify(checkCards) != JSON.stringify((this.validationCards))){
             this.logger.logWarning('validateGameState', undefined, undefined, 'Invalid game state'); 
-            this.gameStatus = this.GameStatus.END_GAME;
+            this.setGameStatus(this.GameStatus.END_GAME);
             return false;
         }
         return true;
@@ -203,30 +203,68 @@ export class Game {
     }
 
 
-    //Checks that the game is still in continuing state (ie, no player has triggered a game-ending action).
+    //Checks that the round has ended; ie, if any player has triggered a game-ending action.
     //I think this only happens when a player finishes their hand, but not really sure.
     //Ideally called at the end of any gamestate-modifying player action function.
     //Functions with different game-ending states may need to override this.
     //TO DO
-    checkGameEnded(){
+    checkRoundEnded(){
+        if (!this.players[this.currentPlayerIndex].hand && this.players[this.currentPlayerIndex].playing){
+            this.logger.logGameAction(
+                'checkRoundEnded', 
+                undefined, 
+                undefined, 
+                `Current player ${this.players[this.currentPlayerIndex].hand.id} has finished hand. Ending round`
+                )
+            this.score.evaluateRoundScore();
+            this.game
+            return false;
+        }
+        return true;
+    }
+    
 
-    } 
+    //Check if the game has ended, ie 1/0 players left.
+    checkGameEnded(){
+        let still_playing=0;
+        for (player of this.players){
+            if (player.playing) still_playing++;
+        }
+
+        if (still_playing<=1){
+            this.logger.logGameAction('checkGameEnded', undefined, undefined, '<=1 player left, ending game');
+            this.setGameStatus(this.GameStatus.END_GAME);
+            return false;
+        }
+        return true;
+    }
 
 
 
     ////////////////////////////////////////////////////////////////////////////
     ///////////////////////// Game action functions ////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
+    
 
 
+    //Simply sets game status to input
+    setGameStatus(gameStatus){
+        if (gameStatus){ //TO DO: check if gameStatus is a GameStatus, 
 
-    //Does stuff to start next round
+            return false;
+        }
+        this.gameStatus = gameStatus;
+        return true;
+    }
+
+
+    //Does some stuff to start next round
     nextRound(){
         if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.ROUND_ENDED)) return false;
 
         this.currentRound++;
 
-        //get config again, since, if no. of players changed, current configuration may not be useable
+        //get config again, since, if number of players changed, current configuration may not be useable
         [
         this.useWildcard,
         this.useJoker,
@@ -248,13 +286,13 @@ export class Game {
         //if it's the first round, deal extra card to first player + let them start
         if (this.currentRound===1){
             this.players[0].addToHand(this.deck.draw(1));
-            this.gameStatus = this.GameStatus.PLAYER_TURN;
+            this.setGameStatus(this.GameStatus.PLAYER_TURN);
         }   
 
         //else, find the previous winner and deal them extra card + let them start
         else{
             //TO DO: get last round winner
-            this.gameStatus = this.GameStatus.PLAYER_TO_DRAW;
+            this.setGameStatus(this.GameStatus.PLAYER_TO_DRAW);
         }
 
         this.logger.logNewRound(this.currentRound);
@@ -267,14 +305,18 @@ export class Game {
     nextPlayer(){
         if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN_ENDED)) return false;
 
-        //while next player isn't playing or just joined (ie no cards in hand yet), go to the next next player
-        while (this.players[this.currentPlayerIndex+1].playing!=true || this.players[this.currentPlayerIndex+1].hand==[]) this.currentPlayerIndex++;
-        this.gameStatus = this.GameStatus.PLAYER_TO_DRAW;
+        //while next player isn't playing or just joined (ie no cards in hand yet), go to the next next player (modulo no. of players, to loop back to first player)
+        while (!this.players[this.currentPlayerIndex+1%this.players.length].playing || 
+                this.players[this.currentPlayerIndex+1%this.players.length].hand==[]){
+                    this.currentPlayerIndex++;
+                } 
+                
+        this.setGameStatus(this.GameStatus.PLAYER_TO_DRAW);
         return true;
     }
 
 
-    //Sets a player as not playing (keeps his hands/melds); if it's the current player, advance to next player.
+    //Sets a player as not playing (keeps his hands/melds); if it's the current player, end their turn and advance to next player.
     quitPlayer(playerIndex){
         if (!this.validateGameState()) return false;
         
@@ -282,7 +324,7 @@ export class Game {
             if (player.id == playerIndex) this.players[playerIndex].playing = false;
         }
         if (this.currentPlayerIndex === playerIndex){
-            gameStatus = this.GameStatus.PLAYER_TURN_ENDED;
+            this.setGameStatus(this.GameStatus.PLAYER_TURN_ENDED);
             this.nextPlayer();
         }
 
@@ -345,7 +387,7 @@ export class Game {
         this.players[this.currentPlayerIndex].hand.push(drawnCards);
 
         this.logger.logGameAction('drawFromDeck', this.players[this.currentPlayerIndex].id, undefined, `Card drawn: ${drawnCards}`); 
-        this.gameStatus = this.GameStatus.PLAYER_TURN;
+        this.setGameStatus(this.GameStatus.PLAYER_TURN);
         return true;
     }
 
@@ -358,7 +400,7 @@ export class Game {
         this.players[this.currentPlayerIndex].hand.push(drawnCards);
 
         this.logger.logGameAction('drawFromDiscardPile', this.players[this.currentPlayerIndex].id, undefined, `Card drawn: ${drawnCards}`);
-        this.gameStatus = this.GameStatus.PLAYER_TURN;
+        this.setGameStatus(this.GameStatus.PLAYER_TURN);
         return true;
     }
 
@@ -482,7 +524,7 @@ export class Game {
         this.deck.addToDiscardPile(discardedCard);
 
         this.logger.logGameAction('endTurn', this.players[this.currentPlayerIndex].id, {cardIndex}, undefined);
-        this.gameStatus = this.GameStatus.PLAYER_TURN_ENDED;
+        this.setGameStatus(this.GameStatus.PLAYER_TURN_ENDED);
         return true;
     }
 
