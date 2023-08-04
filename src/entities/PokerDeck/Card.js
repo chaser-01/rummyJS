@@ -7,6 +7,13 @@ export class Card {
         this.number = number;
     }
 
+
+    //returns value of the card's number only (usually for calculating score of a hand)
+    cardNumberValue(){
+        let [, numberValue] = suitNumberValue(this.suit, this.number);
+        return numberValue;
+    }
+
     
     //card value prioritising suits
     cardValueSuitFirst(){

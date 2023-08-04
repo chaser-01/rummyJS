@@ -6,7 +6,7 @@ import { Deck } from './Deck.js';
 //Extends Deck, automatically populates deck with poker cards (also depends on options) + has discardPile property
 export class PokerDeck extends Deck{
 
-        //so they're accessed as part of PokerDeck
+        //so they can be accessed as part of PokerDeck
         suits = suits;
         numbers = numbers;
 
@@ -39,6 +39,11 @@ export class PokerDeck extends Deck{
         //returns discard pile
         getDiscardPile(){
             return this._discardPile._stack;
+        }
+
+        //returns discard pile size
+        getDiscardPileSize(){
+            return this._discardPile.remaining();
         }
 
         //returns top card of discard pile

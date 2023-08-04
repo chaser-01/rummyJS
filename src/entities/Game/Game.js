@@ -63,6 +63,7 @@ export class Game {
         this.logger = new Logger(this);
 
         this.players = this.initializePlayers(playerIds);
+        this.quitPlayers = [];
 
         this.initialOptions = options;
         [
@@ -224,7 +225,8 @@ export class Game {
     }
     
 
-    //Check if the game has ended, ie 1/0 players left.
+    //Check if the game can no longer continue, ie 1/0 players left.
+    //TO DO: OR the wildcard has run through entire deck? OR hit some limit on number of rounds? we'll see
     checkGameEnded(){
         let still_playing=0;
         for (player of this.players){
@@ -249,7 +251,7 @@ export class Game {
 
     //Simply sets game status to input GameStatus
     setGameStatus(gameStatus){
-        if (!Object.keys(this.GameStatus).find(gameStatus)) return false;
+        if (!Object.keys(this.GameStatus).find(status => status = gameStatus)) return false;
         this.gameStatus = gameStatus;
         return true;
     }
@@ -261,6 +263,20 @@ export class Game {
 
         this.currentRound++;
 
+        //calculate the round score
+        this.score.evaluateRoundScore();
+
+        //moves just-quit players to quitPlayers, and just-unquit players to players
+        for (const [index, player] of this.players.entries()){
+            if (!player.playing) this.quitPlayers.concat(this.players.splice(index, 1));
+        }
+        for (const [index, player] of this.quitPlayers.entries()){
+            if (player.playing) this.players.concat(this.quitPlayers.splice(index, 1));
+        }
+
+        //create next round in score object
+        this.score.initializeNextRound(this.players);
+        
         //get config again, since, if number of players changed, current configuration may not be useable
         [
         this.useWildcard,
@@ -270,6 +286,8 @@ export class Game {
         this.cardsToDeal, 
         this.numberOfDecks
         ] = this.initializeOptions(this.initialOptions);
+
+        
 
         //reset deck and get the next jokerNumber (if wildcard, it will increment)
         [this.deck, this.jokerNumber] = this.initializeDeckAndJokerNumber();
@@ -313,23 +331,41 @@ export class Game {
     }
 
 
-    //Sets a player as not playing (keeps his hands/melds).
-    //Calls checkGameEnded to see if game can still continue; if not, ends the game and returns.
-    //If the current player quit, end their turn and advance to next player.
+    /*
+    Quits a player by setting their playing property to false. Upon next round, they will be moved to quitPlayers.
+    If it's current player, go to next player immediately.
+    Upon each quit, checkGameEnded checks that enough players are present to continue the game.
+    */
     quitPlayer(playerIndex){
         if (!this.validateGameState()) return false;
-        
-        for (const player of this.players){
-            if (player.id == playerIndex) this.players[playerIndex].playing = false;
-            if (this.checkGameEnded()) return true;
-        }
+
+        if (playerIndex > this.players.length) return false;
+
+        this.players[playerIndex].playing = false;
+        if (this.checkGameEnded()) return true;
         if (this.currentPlayerIndex === playerIndex){
             this.setGameStatus(this.GameStatus.PLAYER_TURN_ENDED);
             this.nextPlayer();
         }
-
         this.logger.logGameAction('quitPlayer', this.players[playerIndex].id, {playerIndex}, undefined);
         return true;
+    }
+
+
+    //Unquits a previously playing player (must be in quitPlayers), by reversing the above actions.
+    //They will not be assigned any cards yet, and will only start playing next round.
+    unquitPlayer(playerId){
+        if (!this.validateGameState()) return false;
+
+        for (const [index, player] of this.quitPlayers.entries()){
+            if (player.id == playerId){
+                unquitter = this.quitPlayers.splice(index, 1);
+                this.players.concat(unquitter);
+                this.logger.logGameAction('unquitPlayer', playerId, {playerId}, undefined);
+                return true;
+            }
+        }
+        return false;
     }
 
 
@@ -337,6 +373,7 @@ export class Game {
     addPlayer(playerId){
         if (!this.validateGameState()) return;
         this.players.push(new Player(this, playerId));
+        this.score.addPlayer(playerId);
         this.logger.logGameAction('addPlayer', playerId, {playerId}, undefined); 
     }
 
@@ -404,9 +441,9 @@ export class Game {
     drawFromDiscardPile(){
         if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TO_DRAW)) return false;
 
-        if (this.deck.discardPile.remaining() <= this.cardsToDrawDiscardPile) return false;
+        if (this.deck.getDiscardPileSize() <= this.cardsToDrawDiscardPile) return false;
 
-        let drawnCards = this.deck.discardPile.draw(this.cardsToDrawDiscardPile);
+        let drawnCards = this.deck.drawFromDiscardPile(this.cardsToDrawDiscardPile);
         this.players[this.currentPlayerIndex].hand.push(drawnCards);
 
         this.logger.logGameAction('drawFromDiscardPile', this.players[this.currentPlayerIndex].id, undefined, `Card drawn: ${drawnCards}`);
@@ -420,11 +457,11 @@ export class Game {
         if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN)) return false;
 
         //Create a set, indexSet,  from indexArray (ensures card indexes are unique, since a set's elements will be unique)
-        //Get copy of player's hand, to copy back if invalid meld/card index
-        //Then, check that each index is valid, then draw corresponding card from hand and place into meld.
+        //Copy player's hand to playerHandCopy, to copy back if invalid meld/card index
+        //Then, check that each index is valid, then draw corresponding card from hand and place into an array.
         let indexSet = new Set(indexArray);
         let player = this.players[this.currentPlayerIndex];
-        let playerHandCopy = player.hand;
+        let playerHandCopy = player.hand.slice();
         let meldCards = [];
         for (const index of indexSet){
             if (isNaN(index) || index>player.hand.length){
@@ -553,6 +590,7 @@ export class Game {
         gameInfo.jokerNumber = this.jokerNumber;
         gameInfo.deckSize = this.deck.remaining();
         gameInfo.topDiscardCard = this.deck.getTopOfDiscardPile();
+        gameInfo.discardPileSize = this.deck.getDiscardPileSize();
 
         let player = {};
         player.id = this.players[this.currentPlayerIndex].id;

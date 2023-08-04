@@ -3,7 +3,7 @@ import { printGameInfo } from "./auxiliary/printGameInfo.js";
 
 
 //sort the player's hand, either by suit or number
-export async function sortPlayerHand(game){
+async function sortPlayerHand(game){
     await getInput(
         `Sort by: 
         1: Suit
@@ -23,7 +23,7 @@ export async function sortPlayerHand(game){
 
 
 //specify some card indexes to create a meld out of the player's hand
-export async function createMeld(game){
+async function createMeld(game){
     let cardIndex;
     let indexArray = [];
     while (cardIndex!=-1){
@@ -57,7 +57,7 @@ export async function createMeld(game){
 
 
 //add a specified card to a specified meld
-export async function addToMeld(game){
+async function addToMeld(game){
     let gameInfo = game.getGameInfoForPlayer();
     if (!gameInfo.melds){
         console.log('No melds at the moment.');
@@ -113,7 +113,7 @@ export async function addToMeld(game){
 
 
 //replace a card (should be joker) with a specified card in player's hand
-export async function replaceMeldCard(game){
+async function replaceMeldCard(game){
     gameInfo = game.getGameInfoForPlayer();
     if (!gameInfo.melds){
         console.log('No melds at the moment.');
@@ -181,7 +181,7 @@ export async function replaceMeldCard(game){
 
 
 //discard a specified card and end turn
-export async function endTurn(game){
+async function endTurn(game){
     let cardIndex = -1;
     while (cardIndex==-1){
         cardIndex = await getInput('Enter index of card in your hand to discard: ', input => {
@@ -198,3 +198,5 @@ export async function endTurn(game){
     }
     else console.log('Error occurred. Please try again.');
 }
+
+export { sortPlayerHand, createMeld, addToMeld, replaceMeldCard, endTurn };

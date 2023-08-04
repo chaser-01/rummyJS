@@ -1,5 +1,6 @@
 import { getInput } from "./auxiliary/getInput.js";
 import { printGameInfo } from "./auxiliary/printGameInfo.js";
+import { sortPlayerHand, createMeld, addToMeld, replaceMeldCard, endTurn } from "./playerTurnActions.js";
 
 export async function playerTurn(game){
     printGameInfo(game);
