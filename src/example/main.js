@@ -11,6 +11,19 @@ async function main(){
     [players, options] = await getOptions();
     let playerIds = Array.from(Array(players), (_, index) => index+1);
     let game = new Game(playerIds, options);
+
+    console.log(`
+    -----
+    Game configuration: 
+        useWildcard: ${game.useWildcard}
+        useJoker: ${game.useJoker}
+        cardsToDraw:  ${game.cardsToDraw}
+        cardsToDrawDiscardPile: ${game.cardsToDrawDiscardPile}
+        cardsToDeal: ${game.cardsToDeal}
+        numberOfDecks: ${game.numberOfDecks}
+    -----
+    `)
+    
     game.nextRound();
 
     //main game loop

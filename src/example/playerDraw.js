@@ -26,7 +26,7 @@ export async function playerDraw(game){
                 console.log('Insufficient cards in discard pile; drawing from deck.');
                 game.drawFromDeck();
             }
-            console.log('Drawn from discard pile.');
+            else console.log('Drew from discard pile.');
         }
         return 1;   
     })

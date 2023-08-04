@@ -50,7 +50,6 @@ export class Game {
       });
 
 
-    
     /*
     Initializes important properties and stuff for playing/tracking the game.
     This shouldn't be overridden in variants, since it might break initialization flow. Only override functions within it.
@@ -80,8 +79,7 @@ export class Game {
         this.currentRound = 0;
         this.gameStatus = this.GameStatus.ROUND_ENDED;
                 
-        [this.deck, this.jokerNumber] = this.initializeDeckAndJokerNumber();
-        this.validationCards = this.deck._stack.slice().sort(Card.compareCardsSuitFirst);
+        [this.deck, this.jokerNumber, this.validationCards] = this.initializeDeckJokerAndValidationCards();
     }
 
 
@@ -92,7 +90,7 @@ export class Game {
 
 
 
-    //Loads the config file for this variation (must be in same directory, and have the same name as `title`)
+    //Loads the config file for this variation (must be in same directory, and have the same name as title property)
     loadConfig(){
         const __filename = fileURLToPath(import.meta.url);
         const __dirname = path.dirname(__filename);
@@ -145,16 +143,20 @@ export class Game {
     }
 
 
-    //Initializes and returns a deck and joker/wildcard if applicable; only called upon class initialization
-    initializeDeckAndJokerNumber(){
+    //Returns a deck and joker/wildcard if applicable, based upon options/config
+    initializeDeckJokerAndValidationCards(){
         let deck = new PokerDeck(this.numberOfDecks, this.useJoker);
+        let validationCards = deck._stack.slice().sort(Card.compareCardsSuitFirst);
+        deck.shuffle();
+        
+        //set joker either to printed joker ('Joker') or wildcard, or nothing.
+        //wildcard number is (currentRound+1)%(size of deck numbers)
         let jokerNumber;
         if (this.useJoker) jokerNumber = 'Joker';
-
-        //wildcard number is currentRound+1 % numbers of the deck
         else if (this.useWildcard) jokerNumber = deck.numbers[this.currentRound+1 % Object.keys(deck.numbers).length];
-        deck.shuffle();
-        return [deck, jokerNumber];
+        else jokerNumber = undefined;
+
+        return [deck, jokerNumber, validationCards];
     }
 
 
@@ -165,7 +167,7 @@ export class Game {
 
 
 
-    //Compare current cards against validationCards + validate melds; if anything wrong, log to logger and set gameStatus to GAME_ENDED.
+    //Compare current cards against validationCards + validate melds; if anything wrong, log and set gameStatus to GAME_ENDED.
     //Ideally called at the start of any gamestate-modifying player action function.
     validateGameState(){
         //get deck and discard pile cards
@@ -290,7 +292,7 @@ export class Game {
         
 
         //reset deck and get the next jokerNumber (if wildcard, it will increment)
-        [this.deck, this.jokerNumber] = this.initializeDeckAndJokerNumber();
+        [this.deck, this.jokerNumber, this.validationCards] = this.initializeDeckJokerAndValidationCards();
         
         //deal cards
         for (const player of this.players){
@@ -321,11 +323,10 @@ export class Game {
         if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN_ENDED)) return false;
 
         //while next player isn't playing or just joined (ie no cards in hand yet), go to the next next player (modulo no. of players, to loop back to first player)
-        while (!this.players[this.currentPlayerIndex+1%this.players.length].playing || 
-                this.players[this.currentPlayerIndex+1%this.players.length].hand==[]){
-                    this.currentPlayerIndex++;
-                } 
-                
+        do {this.currentPlayerIndex++;}
+        while (!this.players[(this.currentPlayerIndex+1) % (this.players.length)].playing || 
+                this.players[(this.currentPlayerIndex+1) % (this.players.length)].hand==[])
+
         this.setGameStatus(this.GameStatus.PLAYER_TO_DRAW);
         return true;
     }
@@ -333,7 +334,7 @@ export class Game {
 
     /*
     Quits a player by setting their playing property to false. Upon next round, they will be moved to quitPlayers.
-    If it's current player, go to next player immediately.
+    If it's current player, skip turn and go to next player immediately.
     Upon each quit, checkGameEnded checks that enough players are present to continue the game.
     */
     quitPlayer(playerIndex){
@@ -352,8 +353,10 @@ export class Game {
     }
 
 
-    //Unquits a previously playing player (must be in quitPlayers), by reversing the above actions.
-    //They will not be assigned any cards yet, and will only start playing next round.
+    /*
+    Unquits a previously playing player (must be in quitPlayers), by reversing the above actions.
+    They will not be assigned any cards yet, and will be moved from quitPlayers to players next round.
+    */
     unquitPlayer(playerId){
         if (!this.validateGameState()) return false;
 

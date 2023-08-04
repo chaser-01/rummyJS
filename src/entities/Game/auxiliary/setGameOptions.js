@@ -48,7 +48,7 @@ export function setCardsToDrawDiscardPile(config, cardsToDrawDiscardPile){
     let setCardsToDrawDiscardPile;
     if (cardsToDrawDiscardPile===undefined){
         if (!config.cardsToDrawDiscardPile) setCardsToDrawDiscardPile = 1;
-        else setCardsToDrawDiscardPile = config.useWildcard;
+        else setCardsToDrawDiscardPile = config.cardsToDrawDiscardPile;
     }
     else setCardsToDrawDiscardPile = cardsToDrawDiscardPile;
     return setCardsToDrawDiscardPile;

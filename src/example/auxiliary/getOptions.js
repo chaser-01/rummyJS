@@ -34,5 +34,6 @@ export async function getOptions() {
         const numCards = parseInt(input);
         return (!isNaN(numCards) && Number.isInteger(numCards)) ? numCards : undefined;
     });
+
     return [players, options];
     }
