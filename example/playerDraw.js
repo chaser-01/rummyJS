@@ -5,9 +5,11 @@ export async function playerDraw(game){
     let option = -1;
     while (option == -1){
         option = await getInput(`
-        Player ${gameInfo.currentPlayer.id} turn to draw. Draw:
+        Player ${gameInfo.currentPlayer.id} turn to draw. Your hand: ${gameInfo.currentPlayer.hand.map(card => ` ${card}`)}
+
+        Draw:
             1. ${game.cardsToDraw} cards from deck
-            2. ${game.cardsToDrawDiscardPile} cards from discard pile
+            2. ${game.cardsToDrawDiscardPile} cards from discard pile (Top card: ${gameInfo.topDiscardCard})
     `, input => {
         input = parseInt(input);
 
