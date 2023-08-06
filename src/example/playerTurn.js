@@ -14,6 +14,7 @@ export async function playerTurn(game){
                 3: Add to an existing meld
                 4: Replace an existing meld's card
                 5: End turn
+                6: Quit
     
                 Input: `, input => {
             if (isNaN(parseInt(input)) || input<0 || input>5) {
@@ -52,6 +53,11 @@ export async function playerTurn(game){
             //End turn (must input a card to discard)
             case 5:
                 await endTurn(game);
+                break;
+
+            //Quit current player (ends game if 1 other player is left)
+            case 6:
+                await quitPlayer(game);
                 break;
             
             //Goes back to input

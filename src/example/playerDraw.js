@@ -20,6 +20,8 @@ export async function playerDraw(game){
 
         if (input===1){
             game.drawFromDeck();
+            let curPlayerHand = game.getGameInfoForPlayer().currentPlayer.hand;
+            console.log(`Drew: ${curPlayerHand.splice((curPlayerHand.length-1)-game.cardsToDraw, game.cardsToDraw)}`);
         }
         
         else if (input===2){

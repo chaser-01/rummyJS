@@ -2,12 +2,12 @@ import { Card } from "../PokerDeck/Card.js";
 
 /*
 Main function for checking validity of a meld, by checking if it's a sequence or set.
-Accepts an array of cards, cards, and an optional joker number, jokerNumber.
+Accepts an array of cards, cards, optional joker number, jokerNumber, and optional max set size (defaults to 4).
 Outputs a true/false.
 */
-export function isMeld(cards, jokerNumber=0) {
+export function isMeld(cards, jokerNumber=0, maxSetSize=4) {
 
-    if (Array.isArray(cards) && cards.length>=3 && (isValidSequence(cards, jokerNumber) || isValidSet(cards, jokerNumber))) {
+    if (Array.isArray(cards) && cards.length>=3 && (isValidSequence(cards, jokerNumber) || isValidSet(cards, jokerNumber, maxSetSize))) {
       return true;
     } else {
       return false;
@@ -19,7 +19,8 @@ export function isMeld(cards, jokerNumber=0) {
 Check if the cards form a valid sequence.
 Accepts the array of cards and an optional jokerNumber.
 Checks for validity by:
-  -Call filterJokers() to filter & count jokers, and sort the cards.
+  -Call filterJokers() to filter & count jokers
+  -Sort the cards
   -Loop over the cards:
     -If a card is not sequenced with the previous card (difference>1), use a joker card to fill the difference.
     -If, at any point, we can't fill the difference up to 1 with jokers, return false.
@@ -29,22 +30,25 @@ Checks for validity by:
 */
 function isValidSequence(cards, jokerNumber=0) {
   let jokerCount=0;
-  let jokerlessCards;
-  if (jokerNumber!=0) [jokerlessCards, jokerCount] = filterJokers(cards);
+  let jokerlessCards=cards;
+  if (jokerNumber!=0) [jokerlessCards, jokerCount] = filterJokers(cards, jokerNumber);
+  jokerlessCards.sort(Card.compareCardsNumberFirst);
 
-  const isValid = jokerlessCards.every((card, index) => {
-    if (index==0) return true;
+  let isValid = true;
 
-    const currentCardValue = card.cardValue(card);
-    const previousCardValue = card.cardValue(jokerlessCards[index-1]);
-    const difference = currentCardValue - previousCardValue;
+  for (let i=0; i<jokerlessCards.length; i++){
+    if (i==0) continue;
+
+    const currentCardValue = jokerlessCards[i].cardValueSuitFirst();
+    const prevCardValue = jokerlessCards[i-1].cardValueSuitFirst();
+    let difference = currentCardValue - prevCardValue;
 
     while (difference>1 && jokerCount>0){
-      difference--; jokerCount--;
-      if (jokerCount<=0 && difference>1) return false;  
+      difference--;
+      jokerCount--;
     }
-    return true;
-  })
+    if (jokerCount<=0 && difference>1) isValid = false; 
+  }
   return isValid;
 }
 
@@ -57,29 +61,26 @@ Checks for validity by:
   -Check that the count of every card number + number of jokers is 3 or 4.
   -Returns true if so; else false.
 */
-function isValidSet(cards, jokerNumber=0) {
+function isValidSet(cards, jokerNumber=0, maxSetSize=4) {
   let jokerCount=0;
   let jokerlessCards=cards;
   if (jokerNumber!=0) [jokerlessCards, jokerCount] = filterJokers(cards);
+  jokerlessCards.sort(Card.compareCardsNumberFirst);
 
-  // Count the occurrences of each card number
-  const cardCounts = {};
-  for (let i = 0; i < cards.length; i++) {
-    const card = jokerlessCards[i];
-    const number = card.number;
-    cardCounts[number] = cardCounts[number] ? cardCounts[number] + 1 : 1;
+  //Check that each card's number is correct
+  let isValid = true;
+  for (let i = 0; i < jokerlessCards.length; i++) {
+    if (jokerlessCards[i].number != jokerlessCards[0].number) isValid = false;
   }
 
-  // Check if all card counts are 3 or 4
-  const counts = Object.values(cardCounts);
-  return counts.every((count) => count+jokerCount === 3 || count+jokerCount === 4);
+  if (isValid && jokerlessCards.length+jokerCount>maxSetSize) isValid = false;
+  return isValid;
 }
 
 
-/*
-Filters and counts jokers from an input array of cards, and sorts before returning them.
-*/
-function filterJokers(cards){
+
+//Filters and counts jokers from an input array of cards, and returns joker count + filtered cards
+function filterJokers(cards, jokerNumber){
   let jokerCount=0;
   let jokerlessCards = [];
 

@@ -17,30 +17,20 @@ import { fileURLToPath } from 'url';
 
 
 
-/*
-This class represents a game of Rummy.
-Functions are divided into:
-    -Initialization: Used for initializing properties/objects for game use
-    -Validation: Used for validating gamestate, melds, end-game actions, etc
-    -Game actions: Used for handling non-player actions necessary in the game (dealing, next round, gamestate validation)
-    -Player actions: Used for handling player actions
-    -Viewing: Used for easier viewing of the game as a player/spectator
-
-Functions that may need to be overridden in variants will state so, otherwise it's likely not.
-*/
+/**
+ * Represents a game of Rummy.
+ */
 export class Game {
     //variant title; also used for loading the correct variant config file
     title = "Rummy"; 
 
 
-    /*
-    "enum" that represents game statuses; used for tracking what game actions should occur next:
-        -PLAYER_TO_DRAW: Player must draw from deck/discard pile
-        -PLAYER_TURN: Player must take some player turn action(s)
-        -PLAYER_TURN_ENDED: Game must go to next player
-        -ROUND_ENDED: Game must start next round
-        -END_GAME: Game has ended
-    */
+    /**
+     * @constant
+     * An "enum" that represents statuses the game can take.
+     * The game/player actions current takeable are determined by the current status.
+     * It is assigned to the 'gameStatus' property.
+     */
     GameStatus = Object.freeze({
         PLAYER_TO_DRAW: Symbol('PLAYER_TO_DRAW'),
         PLAYER_TURN: Symbol('PLAYER_TURN'),
@@ -50,10 +40,13 @@ export class Game {
       });
 
 
-    /*
-    Initializes important properties and stuff for playing/tracking the game.
-    This shouldn't be overridden in variants, since it might break initialization flow. Only override functions within it.
-    */
+    /**
+     * 
+     * @constructor
+     * @param {array} playerIds - An array of player's IDs
+     * @param {GameOption} options - Optional options to configure the game
+     * @param {*} gameId - Optional game ID to distinguish a game
+     */
     constructor(playerIds, options={}, gameId=undefined){
         if (gameId) this.gameId = gameId;
 
@@ -65,14 +58,7 @@ export class Game {
         this.quitPlayers = [];
 
         this.initialOptions = options;
-        [
-        this.useWildcard,
-        this.useJoker,
-        this.cardsToDraw,
-        this.cardsToDrawDiscardPile,
-        this.cardsToDeal, 
-        this.numberOfDecks
-        ] = this.initializeOptions(this.initialOptions);
+        this.initializeOptions(this.initialOptions);
 
         this.score = this.initializeScore(this.players);
         this.currentPlayerIndex = 0;
@@ -90,7 +76,11 @@ export class Game {
 
 
 
-    //Loads the config file for this variation (must be in same directory, and have the same name as title property)
+    
+    /**
+     * Loads a json config file (must be located in same directory, and named same as the class 'title' property)
+     * @returns {Object} - An object containing default configuration options
+     */
     loadConfig(){
         const __filename = fileURLToPath(import.meta.url);
         const __dirname = path.dirname(__filename);
@@ -98,33 +88,34 @@ export class Game {
     }
 
 
-    /*
-    Initializes (optional) and returns options from an options object; compares to config, where applicable.
-    Since jokers and wildcards shouldn't be used simultaneously, disable useWildcard option if they were both enabled.
-    Variants that require additional options can override this function, then super it afterwards.
-    */
+    /**
+     * Initializes options that determine some customizable, game-specific variables.
+     * Options are explained in the GameOptions documentation.
+     * @overrideInVariants 
+     * @param {GameOptions} options - Optional options to configure the game
+     * @modifies {useWildcard}
+     * @modifies {useJoker} 
+     * @modifies {cardsToDraw}
+     * @modifies {cardsToDrawDiscardPile}
+     * @modifies {cardsToDeal}
+     * @modifies {numberOfDecks}
+     */
     initializeOptions(options){
-        let useWildcard = setWildcardOption(this.config, options.useWildcard);
-        let useJoker = setJokerOption(this.config, options.useJoker);
-        let cardsToDraw = setCardsToDraw(this.config, options.cardsToDraw);
-        let cardsToDrawDiscardPile = setCardsToDrawDiscardPile(this.config, options.cardsToDrawDiscardPile);
-        let cardsToDeal, numberOfDecks;
-        [cardsToDeal, numberOfDecks] = setCardsToDealAndNumberOfDecks(this.config, this.players.length, options.cardsToDeal, options.numberOfDecks);
+        this.useWildcard = setWildcardOption(this.config, options.useWildcard);
+        this.useJoker = setJokerOption(this.config, options.useJoker);
+        this.cardsToDraw = setCardsToDraw(this.config, options.cardsToDraw);
+        this.cardsToDrawDiscardPile = setCardsToDrawDiscardPile(this.config, options.cardsToDrawDiscardPile);
+        [this.cardsToDeal, this.numberOfDecks] = setCardsToDealAndNumberOfDecks(this.config, this.players.length, options.cardsToDeal, options.numberOfDecks);
 
         if (this.useJoker && this.useWildcard) this.useWildcard = false;
-
-        return [
-            useWildcard,
-            useJoker,
-            cardsToDraw,
-            cardsToDrawDiscardPile,
-            cardsToDeal, 
-            numberOfDecks
-            ]
     }
 
 
-    //Initializes an array of Player objects given an array of playerIds, to assign to the game.
+    /**
+     * Initializes an array of player objects
+     * @param {int[]} playerIds
+     * @returns {Player[]}
+     */
     initializePlayers(playerIds){
         let players = [];
         for (const playerId of playerIds){
@@ -134,16 +125,20 @@ export class Game {
     }
 
 
-    /*
-    Returns a new score object for storing/calculating scores for players.
-    Variants that have different scoring systems should implement their own score subclasses, and override this function to instantiate them.
-    */
+    /**
+     * Initializes a Score object, which is used for tracking/calculating score for each round
+     * @param {Player[]} players 
+     * @returns {GameScore}
+     */
     initializeScore(players){
         return new GameScore(players);
     }
 
 
-    //Returns a deck and joker/wildcard if applicable, based upon options/config
+    /**
+     * Initializes deck, joker (printed or wildcard), and a copy of the deck for validation later.
+     * @returns {int, int, Card[]} 
+     */
     initializeDeckJokerAndValidationCards(){
         let deck = new PokerDeck(this.numberOfDecks, this.useJoker);
         let validationCards = deck._stack.slice().sort(Card.compareCardsSuitFirst);
@@ -167,8 +162,13 @@ export class Game {
 
 
 
-    //Compare current cards against validationCards + validate melds; if anything wrong, log and set gameStatus to GAME_ENDED.
-    //Ideally called at the start of any gamestate-modifying player action function.
+    
+    /**
+     * Validates that the cards in play tally with validationCards, and all melds are valid.
+     * @modifies {gameStatus} - sets to END_GAME if game state is invalid
+     * @modifies {logger} - Logs ending of game if game state is invalid
+     * @returns {boolean} - Whether game state is valid
+     */
     validateGameState(){
         //get deck and discard pile cards
         let checkCards = [];
@@ -198,7 +198,6 @@ export class Game {
         return true;
     }
 
-
     //Simply checks that the current gameStatus is correct
     validateGameStatus(intendedGameStatus){
         if (intendedGameStatus !== this.gameStatus) return false;
@@ -206,10 +205,12 @@ export class Game {
     }
 
 
-    //Checks that the round has ended; ie, if any player has triggered a game-ending action.
-    //I think this only happens when a player finishes their hand, but not really sure.
-    //Ideally called at the end of any gamestate-modifying player action function.
-    //Functions with different game-ending states may need to override this.
+    /**
+     * @modifies {}
+     * @modifies {logger} 
+     * @returns {boolean}
+     */
+
     //TO DO
     checkRoundEnded(){
         if (!this.players[this.currentPlayerIndex].hand && this.players[this.currentPlayerIndex].playing){
@@ -227,7 +228,14 @@ export class Game {
     }
     
 
-    //Check if the game can no longer continue, ie 1/0 players left.
+    
+    /**
+     * Checks that the game has ended (should only be if 1 player is left?)
+     * @modifies {gameStatus} - Sets to END_GAME if game can't continue
+     * @modifies {logger}
+     * @returns {boolean}
+     */
+
     //TO DO: OR the wildcard has run through entire deck? OR hit some limit on number of rounds? we'll see
     checkGameEnded(){
         let still_playing=0;
@@ -251,7 +259,12 @@ export class Game {
     
 
 
-    //Simply sets game status to input GameStatus
+    /**
+     * Verifies that the input is a GameStatus, and sets it
+     * @modifies {gameStatus} - Sets to the input gameStatus
+     * @param {GameStatus} gameStatus 
+     * @returns {boolean}
+     */
     setGameStatus(gameStatus){
         if (!Object.keys(this.GameStatus).find(status => status = gameStatus)) return false;
         this.gameStatus = gameStatus;
@@ -259,7 +272,14 @@ export class Game {
     }
 
 
-    //Does some stuff to start next round
+    
+    /** 
+     * Does the below actions to start the next round:
+     *  
+     * @modifies {gameStatus}
+     * @modifies {logger}
+     * @returns {boolean}
+     */
     nextRound(){
         if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.ROUND_ENDED)) return false;
 
@@ -279,17 +299,8 @@ export class Game {
         //create next round in score object
         this.score.initializeNextRound(this.players);
         
-        //get config again, since, if number of players changed, current configuration may not be useable
-        [
-        this.useWildcard,
-        this.useJoker,
-        this.cardsToDraw,
-        this.cardsToDrawDiscardPile,
-        this.cardsToDeal, 
-        this.numberOfDecks
-        ] = this.initializeOptions(this.initialOptions);
-
-        
+        //set game config again (particular cardsToDeal, if no. of players changed)
+        this.initializeOptions(this.initialOptions);
 
         //reset deck and get the next jokerNumber (if wildcard, it will increment)
         [this.deck, this.jokerNumber, this.validationCards] = this.initializeDeckJokerAndValidationCards();
@@ -333,11 +344,11 @@ export class Game {
 
 
     /*
-    Quits a player by setting their playing property to false. Upon next round, they will be moved to quitPlayers.
-    If it's current player, skip turn and go to next player immediately.
+    Quits a player (default is current player) by setting their playing property to false. Upon next round, they will be moved to quitPlayers.
+    If it's the current player, go to next player immediately.
     Upon each quit, checkGameEnded checks that enough players are present to continue the game.
     */
-    quitPlayer(playerIndex){
+    quitPlayer(playerIndex=this.currentPlayerIndex){
         if (!this.validateGameState()) return false;
 
         if (playerIndex > this.players.length) return false;
@@ -363,7 +374,7 @@ export class Game {
         for (const [index, player] of this.quitPlayers.entries()){
             if (player.id == playerId){
                 unquitter = this.quitPlayers.splice(index, 1);
-                this.players.push(unquitter);
+                this.players.push(...unquitter);
                 this.logger.logGameAction('unquitPlayer', playerId, {playerId}, undefined);
                 return true;
             }
@@ -390,12 +401,13 @@ export class Game {
 
 
     ////////////////////////////////////////////////////////////////////////////
-    //////// Player action functions (acts on player currentPlayerIndex) ///////
+    ///////////// Player action functions (acts on current player) /////////////
     ////////////////////////////////////////////////////////////////////////////
 
     
 
     //Sorts a player's hand by suit first, and places jokers at the highest; if no playerIndex specified, defaults to current player
+    //TO DO: this is broken (probably the comparison function), plz fix
     sortHandBySuit(playerIndex = this.currentPlayerIndex){
         if (!this.validateGameState()) return false;
 
@@ -431,9 +443,7 @@ export class Game {
         if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TO_DRAW)) return false;
 
         let drawnCards = this.deck.draw(this.cardsToDraw);
-        console.log(`before: ${this.players[this.currentPlayerIndex].hand}`)
         this.players[this.currentPlayerIndex].hand.push(...drawnCards);
-        console.log(`after: ${this.players[this.currentPlayerIndex].hand}`)
 
         this.logger.logGameAction('drawFromDeck', this.players[this.currentPlayerIndex].id, undefined, `Card drawn: ${drawnCards}`); 
         this.setGameStatus(this.GameStatus.PLAYER_TURN);
@@ -488,9 +498,15 @@ export class Game {
     
         else{
             this.logger.logWarning('createMeld', this.players[this.currentPlayerIndex].id, {indexArray}, 'Invalid meld');
+            this.invalidMeldDeclaration();
             player.hand = playerHandCopy;
             return false;
         }
+    }
+
+
+    invalidMeldDeclaration(){
+
     }
 
 

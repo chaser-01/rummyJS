@@ -17,7 +17,8 @@ async function sortPlayerHand(game){
             }
             if (input===1) game.sortHandBySuit();
             if (input===2) game.sortHandByNumber();
-            console.log(`Sorted. Your hand: ${game.getGameInfoForPlayer().currentPlayer.hand.map(card=>` ${card}`)}`);
+            console.log('Sorted.');
+            printGameInfo(game);
     });
 }
 
@@ -44,11 +45,14 @@ async function createMeld(game){
                 return input;
             }
         })
-        if (cardIndex!==-1) indexArray.push(cardIndex);
+        if (cardIndex!=-1){
+            console.log(`Chosen card: ${game.getGameInfoForPlayer().currentPlayer.hand[cardIndex]}`);
+            indexArray.push(cardIndex);
+        }
     }
     if (indexArray){
         if (game.createMeld(indexArray)){
-            console.log('Valid meld created! Current game state: ');
+            console.log('Valid meld created!');
             printGameInfo(game);
         }
         else console.log(`Inputted cards don't form a valid meld.`);
@@ -103,7 +107,7 @@ async function addToMeld(game){
     }
     
     if (game.addToMeld(cardIndex, meldOwnerIndex, meldIndex)){
-        console.log('Successfully added! Current game state: ');
+        console.log('Successfully added!');
         printGameInfo();
     }  
     else{
@@ -171,7 +175,7 @@ async function replaceMeldCard(game){
     }
     
     if (game.replaceMeldCard(cardIndex, meldOwnerIndex, meldIndex, replacedCardIndex)){
-        console.log('Successfully added! Current game state: ');
+        console.log('Successfully added!');
         printGameInfo();
     }  
     else{
@@ -199,4 +203,11 @@ async function endTurn(game){
     else console.log('Error occurred. Please try again.');
 }
 
-export { sortPlayerHand, createMeld, addToMeld, replaceMeldCard, endTurn };
+
+//quits current player
+async function quitPlayer(game){
+    game.quitPlayer();
+    return;
+}
+
+export { sortPlayerHand, createMeld, addToMeld, replaceMeldCard, endTurn, quitPlayer };
