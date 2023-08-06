@@ -20,7 +20,6 @@ export async function playerDraw(game){
 
         if (input===1){
             game.drawFromDeck();
-            console.log('Drew from deck.');
         }
         
         else if (input===2){

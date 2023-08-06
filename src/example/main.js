@@ -29,15 +29,13 @@ async function main(){
     //main game loop
     while (game.gameStatus !== game.GameStatus.END_GAME){
         while (game.gameStatus !== game.GameStatus.ROUND_ENDED){
-            while (game.gameStatus == game.GameStatus.PLAYER_TURN){
-                await playerTurn(game);
-            }
+            await playerTurn(game);
             game.nextPlayer();
             await playerDraw(game);
         }
         console.log('Round has ended! Score: ');
         game.nextRound();
-    }
+        }
     console.log('Game has ended. Thanks for playing!');
 }
 

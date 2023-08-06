@@ -172,14 +172,14 @@ export class Game {
     validateGameState(){
         //get deck and discard pile cards
         let checkCards = [];
-        checkCards = checkCards.concat(this.deck.getCards());
-        checkCards = checkCards.concat(this.deck.getDiscardPile());
+        checkCards.push(...this.deck.getCards());
+        checkCards.push(...this.deck.getDiscardPile());
 
         //for each player, add their hand cards to checkCards; then validate each meld, then add the cards to checkCards
         for (const player of this.players){
-            checkCards = checkCards.concat(player.hand);
+            checkCards.push(...player.hand);
             for (const meld of player.melds){
-                if (meld) checkCards = checkCards.concat(meld.cards);
+                if (meld) checkCards.push(...meld.cards);
                 if (!meld.isComplete()) { 
                     this.logger.logWarning('validateGameState', undefined, undefined, `Player ${player.id} has invalid meld: ${meld.cards}`);
                     this.setGameStatus(this.GameStatus.END_GAME);
@@ -270,10 +270,10 @@ export class Game {
 
         //moves just-quit players to quitPlayers, and just-unquit players to players
         for (const [index, player] of this.players.entries()){
-            if (!player.playing) this.quitPlayers.concat(this.players.splice(index, 1));
+            if (!player.playing) this.quitPlayers.push(...this.players.splice(index, 1));
         }
         for (const [index, player] of this.quitPlayers.entries()){
-            if (player.playing) this.players.concat(this.quitPlayers.splice(index, 1));
+            if (player.playing) this.players.push(...this.quitPlayers.splice(index, 1));
         }
 
         //create next round in score object
@@ -363,7 +363,7 @@ export class Game {
         for (const [index, player] of this.quitPlayers.entries()){
             if (player.id == playerId){
                 unquitter = this.quitPlayers.splice(index, 1);
-                this.players.concat(unquitter);
+                this.players.push(unquitter);
                 this.logger.logGameAction('unquitPlayer', playerId, {playerId}, undefined);
                 return true;
             }
@@ -431,7 +431,9 @@ export class Game {
         if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TO_DRAW)) return false;
 
         let drawnCards = this.deck.draw(this.cardsToDraw);
-        this.players[this.currentPlayerIndex].hand.concat(drawnCards);
+        console.log(`before: ${this.players[this.currentPlayerIndex].hand}`)
+        this.players[this.currentPlayerIndex].hand.push(...drawnCards);
+        console.log(`after: ${this.players[this.currentPlayerIndex].hand}`)
 
         this.logger.logGameAction('drawFromDeck', this.players[this.currentPlayerIndex].id, undefined, `Card drawn: ${drawnCards}`); 
         this.setGameStatus(this.GameStatus.PLAYER_TURN);
@@ -447,7 +449,7 @@ export class Game {
         if (this.deck.getDiscardPileSize() < this.cardsToDrawDiscardPile) return false;
 
         let drawnCards = this.deck.drawFromDiscardPile(this.cardsToDrawDiscardPile);
-        this.players[this.currentPlayerIndex].hand.concat(drawnCards);
+        this.players[this.currentPlayerIndex].hand.push(...drawnCards);
 
         this.logger.logGameAction('drawFromDiscardPile', this.players[this.currentPlayerIndex].id, undefined, `Card drawn: ${drawnCards}`);
         this.setGameStatus(this.GameStatus.PLAYER_TURN);
@@ -472,7 +474,7 @@ export class Game {
                 player.hand = playerHandCopy;
                 return false;
             }
-            meldCards.concat(player.hand.splice(index, 1));
+            meldCards.push(...player.hand.splice(index, 1));
         } 
 
         //Create the meld object, and check if meld is valid.
