@@ -63,17 +63,23 @@ export class Game {
      */
     constructor(playerIds, options={}, gameId=undefined){
         if (gameId) this.gameId = gameId;
+
         this.config = this.loadConfig();
         this.logger = new Logger(this);
+
         this.players = this.initializePlayers(playerIds);
         this.quitPlayers = [];
+
         this.initialOptions = options;
         this.initializeOptions(this.initialOptions);
+
         this.score = this.initializeScore(this);
         this.currentPlayerIndex = 0;
         this.currentRound = 0;
         this.gameStatus = this.GameStatus.ROUND_ENDED;
+
         [this.deck, this.jokerNumber, this.validationCards] = this.initializeDeckJokerAndValidationCards();
+        if (this.useWildcard) this.jokerNumber = this.getWildcardNumber();
     }
 
 
@@ -154,7 +160,6 @@ export class Game {
         //wildcard number is (currentRound+1)%(size of deck numbers)
         let jokerNumber;
         if (this.useJoker) jokerNumber = 'Joker';
-        else if (this.useWildcard) jokerNumber = getWildcardNumber();
         else jokerNumber = undefined;
 
         return [deck, jokerNumber, validationCards];
@@ -169,8 +174,8 @@ export class Game {
      * @returns {string | boolean}
      */
     getWildcardNumber(){
-        if (useWildcard){
-            return deck.numbers[this.currentRound+1 % Object.keys(deck.numbers).length];
+        if (this.useWildcard){
+            return this.deck.numbers[this.currentRound+1 % Object.keys(this.deck.numbers).length];
         }
         else return false;
     }
@@ -325,8 +330,9 @@ export class Game {
         //set game config again (particularly cardsToDeal, if number of players changed)
         this.initializeOptions(this.initialOptions);
 
-        //reset deck and get the next jokerNumber (if wildcard, it will increment)
+        //reset deck and get the next jokerNumber
         [this.deck, this.jokerNumber, this.validationCards] = this.initializeDeckJokerAndValidationCards();
+        if (this.useWildcard) this.jokerNumber = this.getWildcardNumber();
         
         //deal cards
         for (const player of this.players){
@@ -346,7 +352,7 @@ export class Game {
             this.setGameStatus(this.GameStatus.PLAYER_TO_DRAW);
         }
 
-        this.logger.logNewRound(this.currentRound);
+        this.logger.logNewRound();
         return true;
     }
 

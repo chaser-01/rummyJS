@@ -22,12 +22,11 @@ export class GameScore{
      * @modifies {scores}
      */
     initializeRound(){
-        if (!scores[game.currentRound]){
-            for (const player of game.players) {
-                if (player.playing) this.scores[game.currentRound][player] = 0;
+        if (!this.scores[this.game.currentRound]){
+            for (const player of this.game.players) {
+                if (player.playing) this.scores[this.game.currentRound][player] = 0;
             }
         }
-        this.currentRound++;
     }
 
 
@@ -37,8 +36,8 @@ export class GameScore{
      * @modifies {scores}
      */
     evaluateRoundScore(){
-        for (const player of Object.keys(this.scores[game.currentRound])){
-            this.scores[game.currentRound][player] = this.evaluatePlayerScore(player);
+        for (const player of Object.keys(this.scores[this.game.currentRound])){
+            this.scores[this.game.currentRound][player] = this.evaluatePlayerScore(player);
         }
     }
 
