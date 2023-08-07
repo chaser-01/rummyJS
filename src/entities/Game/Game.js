@@ -28,7 +28,7 @@ export class Game {
     /**
      * @constant
      * An "enum" that represents statuses the game can take.
-     * The game/player actions current takeable are determined by the current status.
+     * The game/player actions that can be taken at any point of time are determined by the current status.
      * It is assigned to the 'gameStatus' property.
      */
     GameStatus = Object.freeze({
@@ -41,30 +41,38 @@ export class Game {
 
 
     /**
-     * 
+     * Creates a Game.
+     * Don't override this in variants as it may mess with initialization flow; instead override individual functions as required.
      * @constructor
-     * @param {array} playerIds - An array of player's IDs
-     * @param {GameOption} options - Optional options to configure the game
-     * @param {*} gameId - Optional game ID to distinguish a game
+     * @modifies {gameId} - Optional, for uniquely identifying a game
+     * @modifies {config} - The game's config file
+     * @modifies {logger} - Used for logging game/player actions
+     * @modifies {players} - Array of player objects
+     * @modifies {quitPlayers} - Array of players who have quit
+     * @modifies {initialOptions} - Stores the options that were passed into constructor
+     * @modifies {score} - Tracks/evaluates player scores
+     * @modifies {currentPlayerIndex} - Tracks the current player
+     * @modifies {currentRound} - Tracks the current round
+     * @modifies {gameStatus} - Tracks the current game status (and what actions can be taken)
+     * @modifies {deck} - The game deck
+     * @modifies {jokerNumber} - The joker (can be printed, or a wildcard)
+     * @modifies {validationCards} - A copy of the deck, for validation later on
+     * @param {int[]} playerIds - An array of player's IDs
+     * @param {GameOption} options - Optional options to configure the game (see GameOption class)
+     * @param {int} gameId - Optional game ID
      */
     constructor(playerIds, options={}, gameId=undefined){
         if (gameId) this.gameId = gameId;
-
         this.config = this.loadConfig();
-
         this.logger = new Logger(this);
-
         this.players = this.initializePlayers(playerIds);
         this.quitPlayers = [];
-
         this.initialOptions = options;
         this.initializeOptions(this.initialOptions);
-
-        this.score = this.initializeScore(this.players);
+        this.score = this.initializeScore(this);
         this.currentPlayerIndex = 0;
         this.currentRound = 0;
         this.gameStatus = this.GameStatus.ROUND_ENDED;
-                
         [this.deck, this.jokerNumber, this.validationCards] = this.initializeDeckJokerAndValidationCards();
     }
 
@@ -75,10 +83,9 @@ export class Game {
     ////////////////////////////////////////////////////////////////////////////
 
 
-
     
     /**
-     * Loads a json config file (must be located in same directory, and named same as the class 'title' property)
+     * Loads a json config file for the game (must be located in same directory, and named same as the class 'title' property)
      * @returns {Object} - An object containing default configuration options
      */
     loadConfig(){
@@ -91,7 +98,6 @@ export class Game {
     /**
      * Initializes options that determine some customizable, game-specific variables.
      * Options are explained in the GameOptions documentation.
-     * @overrideInVariants 
      * @param {GameOptions} options - Optional options to configure the game
      * @modifies {useWildcard}
      * @modifies {useJoker} 
@@ -127,16 +133,16 @@ export class Game {
 
     /**
      * Initializes a Score object, which is used for tracking/calculating score for each round
-     * @param {Player[]} players 
+     * @param {Game} game 
      * @returns {GameScore}
      */
-    initializeScore(players){
-        return new GameScore(players);
+    initializeScore(game){
+        return new GameScore(game);
     }
 
 
     /**
-     * Initializes deck, joker (printed or wildcard), and a copy of the deck for validation later.
+     * Initializes deck, joker (printed or wildcard, depending on game configuration), and a copy of the deck for validation later.
      * @returns {int, int, Card[]} 
      */
     initializeDeckJokerAndValidationCards(){
@@ -148,10 +154,25 @@ export class Game {
         //wildcard number is (currentRound+1)%(size of deck numbers)
         let jokerNumber;
         if (this.useJoker) jokerNumber = 'Joker';
-        else if (this.useWildcard) jokerNumber = deck.numbers[this.currentRound+1 % Object.keys(deck.numbers).length];
+        else if (this.useWildcard) jokerNumber = getWildcardNumber();
         else jokerNumber = undefined;
 
         return [deck, jokerNumber, validationCards];
+    }
+
+
+    /**
+     * Get the current wildcard number if wildcards are enabled, upon start of each round.
+     * Variants may handle wildcards differently, so overriding this method may be useful.
+     * Currently, wildcard starts at 2 and increments on each round.
+     * @modifies {jokerNumber}
+     * @returns {string | boolean}
+     */
+    getWildcardNumber(){
+        if (useWildcard){
+            return deck.numbers[this.currentRound+1 % Object.keys(deck.numbers).length];
+        }
+        else return false;
     }
 
 
@@ -162,7 +183,6 @@ export class Game {
 
 
 
-    
     /**
      * Validates that the cards in play tally with validationCards, and all melds are valid.
      * @modifies {gameStatus} - sets to END_GAME if game state is invalid
@@ -274,8 +294,11 @@ export class Game {
 
     
     /** 
-     * Does the below actions to start the next round:
-     *  
+     * Does some things (explained below) to start the next round.
+     * @modifies {currentRound}
+     * @modifies {score}
+     * @modifies {players, quitPlayers}
+     * @modifies {useWildcard, useJoker, cardsToDraw, cardsToDrawDiscardPile, cardsToDeal, numberOfDecks}
      * @modifies {gameStatus}
      * @modifies {logger}
      * @returns {boolean}
@@ -297,9 +320,9 @@ export class Game {
         }
 
         //create next round in score object
-        this.score.initializeNextRound(this.players);
+        this.score.initializeRound();
         
-        //set game config again (particular cardsToDeal, if no. of players changed)
+        //set game config again (particularly cardsToDeal, if number of players changed)
         this.initializeOptions(this.initialOptions);
 
         //reset deck and get the next jokerNumber (if wildcard, it will increment)
@@ -328,26 +351,32 @@ export class Game {
     }
 
 
-    //Goes to the next player.
-    //Note: No logging as it will be implied by logging of the next player's actions anyway
+    /**
+     * Goes to the next player.
+     * While the next player isn't playing, go to the next next player.
+     * @modifies {currentPlayerIndex}
+     * @modifies {gameStatus}
+     * @modifies {gameStatus}
+     * @returns {boolean}
+     */
     nextPlayer(){
         if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN_ENDED)) return false;
 
-        //while next player isn't playing or just joined (ie no cards in hand yet), go to the next next player (modulo no. of players, to loop back to first player)
+        //while next player isn't playing, go to the next next player (modulo no. of players, to loop back to first player)
         do {this.currentPlayerIndex++;}
-        while (!this.players[(this.currentPlayerIndex+1) % (this.players.length)].playing || 
-                this.players[(this.currentPlayerIndex+1) % (this.players.length)].hand==[])
+        while (!this.players[(this.currentPlayerIndex+1) % (this.players.length)].playing)
 
         this.setGameStatus(this.GameStatus.PLAYER_TO_DRAW);
         return true;
     }
 
 
-    /*
-    Quits a player (default is current player) by setting their playing property to false. Upon next round, they will be moved to quitPlayers.
-    If it's the current player, go to next player immediately.
-    Upon each quit, checkGameEnded checks that enough players are present to continue the game.
-    */
+    /**
+     * Sets a player as having quit; keeps their cards in their possession for current round.
+     * @modifies {logger}
+     * @param {int} playerIndex - Index of the player who is quitting (default is current player)
+     * @returns {boolean}
+     */
     quitPlayer(playerIndex=this.currentPlayerIndex){
         if (!this.validateGameState()) return false;
 
@@ -364,10 +393,12 @@ export class Game {
     }
 
 
-    /*
-    Unquits a previously playing player (must be in quitPlayers), by reversing the above actions.
-    They will not be assigned any cards yet, and will be moved from quitPlayers to players next round.
-    */
+    /**
+     * Unquits a player who was playing; they will continue next round with their previous round scores intact.
+     * @modifies {logger}
+     * @param {integer} playerId - ID of the player to unquit
+     * @returns {boolean}
+     */
     unquitPlayer(playerId){
         if (!this.validateGameState()) return false;
 
@@ -383,11 +414,16 @@ export class Game {
     }
 
 
-    //Add a player to game. 
+    
+    /**
+     * Adds a new player to the game.
+     * @modifies {logger}
+     * @param {integer} playerId - ID of the new player
+     * @returns {boolean}
+     */
     addPlayer(playerId){
         if (!this.validateGameState()) return;
         this.players.push(new Player(this, playerId));
-        this.score.addPlayer(playerId);
         this.logger.logGameAction('addPlayer', playerId, {playerId}, undefined); 
     }
 
@@ -405,8 +441,14 @@ export class Game {
     ////////////////////////////////////////////////////////////////////////////
 
     
-
-    //Sorts a player's hand by suit first, and places jokers at the highest; if no playerIndex specified, defaults to current player
+    
+    /**
+     * Sorts a player's hand, by suit THEN by number
+     * @modifies {players[playerIndex]}
+     * @modifies {logger}
+     * @param {int} playerIndex - Default is current player
+     * @returns {boolean}
+     */
     //TO DO: this is broken (probably the comparison function), plz fix
     sortHandBySuit(playerIndex = this.currentPlayerIndex){
         if (!this.validateGameState()) return false;
@@ -422,7 +464,14 @@ export class Game {
         return true;
     }
 
-    //Sorts a player's hand by number first, and places jokers at the highest; if no playerIndex specified, defaults to current player
+
+    /**
+     * Sorts a player's hand, by number THEN by suit (most commonly used sort)
+     * @modifies {players[playerIndex]}
+     * @modifies {logger}
+     * @param {*} playerIndex - Default is current player
+     * @returns {boolean}
+     */
     sortHandByNumber(playerIndex = this.currentPlayerIndex){
         if (!this.validateGameState()) return false;
 
@@ -438,7 +487,15 @@ export class Game {
     }
 
 
-    //Draw *cardsToDraw* cards from deck and assigns to current player's hand, and set next gameStatus.
+    
+    /**
+     * Draws 'cardsToDraw' cards from the deck, for the current player.
+     * @modifies {deck}
+     * @modifies {gameStatus}
+     * @modifies {players[currentPlayerIndex]}
+     * @modifies {logger}
+     * @returns {boolean}
+     */
     drawFromDeck(){
         if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TO_DRAW)) return false;
 
@@ -451,8 +508,15 @@ export class Game {
     }
 
 
-    //Draw *cardsToDrawFromDiscardPile* cards from discard pile and assigns to current player's hand, and set next gameStatus.
-    //If insufficient cards in discard pile, return false.
+    /**
+     * Draws 'cardsToDrawDiscardPile' cards from the discard pile, for the current player.
+     * If insufficient cards in discard pile, returns false.
+     * @modifies {deck}
+     * @modifies {gameStatus}
+     * @modifies {players[currentPlayerIndex]}
+     * @modifies {logger}
+     * @returns {boolean}
+     */
     drawFromDiscardPile(){
         if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TO_DRAW)) return false;
 
@@ -467,7 +531,13 @@ export class Game {
     }
 
 
-    //Attempt to create a meld; if invalid, log error and return. Accepts an array of indexes for the chosen cards.
+    /**
+     * Attempts to create a meld out of chosen cards in the current player's hand.
+     * @modifies {players[currentPlayerIndex]}
+     * @modifies {logger}
+     * @param {int[]} indexArray - Array of integers representing indexes of chosen cards in the hand
+     * @returns {boolean}
+     */
     createMeld(indexArray){
         if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN)) return false;
 
@@ -505,17 +575,24 @@ export class Game {
     }
 
 
+    /**
+     *  
+     */
     invalidMeldDeclaration(){
 
     }
 
 
-    /*
-    Attempt to add to a meld; if invalid, log it. Accepts:
-        -addingCardIndex: Index of card in current player's hand to add to the meld
-        -meldOwnerIndex: Index of the player who owns the meld in question
-        -meldIndex: Index of the meld in the player's array of melds
-    */
+    /**
+     * Attempts to add a specified card in current player's hand, to a specified meld, of a specified player.
+     * @modifies {players[currentPlayerIndex]}
+     * @modifies {player[meldOwnerIndex]}
+     * @modifies {logger}
+     * @param {int} addingCardIndex 
+     * @param {int} meldOwnerIndex 
+     * @param {int} meldIndex 
+     * @returns {boolean}
+     */
     addToMeld(addingCardIndex, meldOwnerIndex, meldIndex){
         if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN)) return;
 
@@ -542,13 +619,17 @@ export class Game {
     }
 
 
-    /*
-    Attempt to replace a meld's joker (must indicate index of the card in the targeted meld); if invalid, log it. Accepts:
-        -replacingCardIndex: Index of card in current player's hand to use for replacing
-        -meldOwnerIndex: Index of the player who owns the meld in question
-        -meldIndex: Index of the meld in the player's array of melds
-        -replacedCardIndex: Index of card in target player's targeted meld, to be replaced (should be a joker)
-    */
+    /**
+     * Attempts to replace a specified card (only jokers?) in a specified meld, with a specified card in current player's hand.
+     * @modifies {players[currentPlayerIndex]}
+     * @modifies {players[meldOwnerIndex]}
+     * @modifies {logger}
+     * @param {int} replacingCardIndex 
+     * @param {int} meldOwnerIndex 
+     * @param {int} meldIndex 
+     * @param {int} replacedCardIndex 
+     * @returns {boolean}
+     */
     replaceMeldCard(replacingCardIndex, meldOwnerIndex, meldIndex, replacedCardIndex){
         if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN)) return;
 
@@ -578,8 +659,15 @@ export class Game {
         }
     }
 
-
-    //End player turn and set gameStatus; cardIndex is the index of the card which player will discard.
+    
+    /**
+     * End current player's turn, and choose a card in hand to discard.
+     * @modifies {gameStatus}
+     * @modifies {players[currentPlayerIndex]}
+     * @modifies {logger}
+     * @param {int} cardIndex 
+     * @returns {boolean}
+     */
     endTurn(cardIndex){
         if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN)) return false;
 
@@ -590,7 +678,6 @@ export class Game {
 
         let discardedCard = this.players[this.currentPlayerIndex].hand.splice(cardIndex, 1);
         this.deck.addToDiscardPile(discardedCard);
-
         this.logger.logGameAction('endTurn', this.players[this.currentPlayerIndex].id, {cardIndex}, undefined);
         this.setGameStatus(this.GameStatus.PLAYER_TURN_ENDED);
         return true;
@@ -604,8 +691,12 @@ export class Game {
 
 
 
-    //Returns object with all information relevant to the current player
-    getGameInfoForPlayer(){
+    /**
+     * Returns an object with information useful for a player (defaults to current player)
+     * @param {playerIndex}
+     * @returns 
+     */
+    getGameInfoForPlayer(playerIndex = this.currentPlayerIndex){
         let gameInfo = {};
 
         gameInfo.jokerNumber = this.jokerNumber;
@@ -614,9 +705,9 @@ export class Game {
         gameInfo.discardPileSize = this.deck.getDiscardPileSize();
 
         let player = {};
-        player.id = this.players[this.currentPlayerIndex].id;
-        player.hand = this.players[this.currentPlayerIndex].hand;
-        player.melds = this.players[this.currentPlayerIndex].melds;
+        player.id = this.players[playerIndex].id;
+        player.hand = this.players[playerIndex].hand;
+        player.melds = this.players[playerIndex].melds;
 
         let tableMelds = {};
         for (const player of this.players){

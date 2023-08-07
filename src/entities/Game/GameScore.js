@@ -1,39 +1,54 @@
+/**
+ * Used for tracking and calculating a game's score.
+ */
 export class GameScore{
 
-    /*
-    Initialize _scores, with starting round 1. 
-    Here, each player starts with score 0.
-    Initializes the current round as 1.
-    */
-    constructor(players){
+    /**
+     * Creates a GameScore. 
+     * @constructor
+     * @modifies {game} - Assigns the game to be tracked
+     * @modifies {scores} - The object that tracks scores
+     * @param {Game} game 
+     */
+    constructor(game){
+        this.game = game;
         this.scores = {1: {}}
-        for (const player of players) this.scores[1][player] = 0;
-        this.currentRound = 1;
+        for (const player of game.players) this.scores[1][player] = 0;
     }
 
 
-    //Increments currentRound and initializes the next round in scores.
-    initializeNextRound(players){
-        for (const player of players) this.scores[this.currentRound][player] = 0;
+    /**
+     * If the game's current round doesn't exist in scores, initialize it
+     * @modifies {scores}
+     */
+    initializeRound(){
+        if (!scores[game.currentRound]){
+            for (const player of game.players) {
+                if (player.playing) this.scores[game.currentRound][player] = 0;
+            }
+        }
         this.currentRound++;
     }
 
 
-    /*
-    Called by Game object at the end of every round, to evaluate all player's scores.
-    Calls evaluatePlayerScore on each player to evaluate their score, and update for currentRound.
-    */
+    /**
+     * Evaluates the current round's score for each playing player.
+     * Calls evaluatePlayerScore for each (currently playing) player.
+     * @modifies {scores}
+     */
     evaluateRoundScore(){
-        for (const player of Object.keys(this.scores[this.currentRound])){
-            this.scores[this.currentRound][player] = this.evaluatePlayerScore(player);
+        for (const player of Object.keys(this.scores[game.currentRound])){
+            this.scores[game.currentRound][player] = this.evaluatePlayerScore(player);
         }
     }
 
 
-    /*
-    Evaluates a single Player's score (total value of their hand).
-    This function should be overridden for variations with different scoring systems.
-    */
+    /**
+     * Evaluates a single player's score.
+     * Variants with different scoring systems should override this.
+     * @param {Player} player 
+     * @returns {int}
+     */
     evaluatePlayerScore(player){
         let score = 0;
         if (player.hand){
