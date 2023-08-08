@@ -375,7 +375,7 @@ export class Game {
         if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN_ENDED)) return false;
 
         //while next player isn't playing, go to the next next player (modulo no. of players, to loop back to first player)
-        do {this.currentPlayerIndex++;}
+        do {this.currentPlayerIndex = (this.currentPlayerIndex+1) % (this.players.length);}
         while (!this.players[(this.currentPlayerIndex+1) % (this.players.length)].playing)
 
         this.setGameStatus(this.GameStatus.PLAYER_TO_DRAW);
@@ -621,6 +621,7 @@ export class Game {
 
         let potentialMeld = this.players[meldOwnerIndex].melds[meldIndex];
         let addingCard = this.players[this.currentPlayerIndex].hand[addingCardIndex];
+        if (!potentialMeld || !addingCard) return false;
 
         if (potentialMeld.addCard(addingCard, this.jokerNumber)){
             this.players[meldOwnerIndex].melds[meldIndex] = potentialMeld;

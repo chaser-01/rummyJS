@@ -6,7 +6,6 @@ let arr = []
 arr.push(new Card("Clubs", "Ace"))
 arr.push(new Card("Hearts", "Ace"))
 arr.push(new Card("Hearts", "2"))
-arr.push(new Card("Spades", "2"))
 let meld = new Meld(arr, 2)
 
 let arr2 = []

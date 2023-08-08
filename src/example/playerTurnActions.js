@@ -64,12 +64,12 @@ async function createMeld(game){
 //add a specified card to a specified meld
 async function addToMeld(game){
     let gameInfo = game.getGameInfoForPlayer();
-    if (!gameInfo.melds){
+    if (!gameInfo.tableMelds){
         console.log('No melds at the moment.');
         return;
     }
 
-    console.log(`Table melds:${Object.keys(gameInfo.tableMelds).map(player => ` ${player}: ${gameInfo.tableMelds.player}`)}`);
+    console.log(`Table melds:${Object.keys(gameInfo.tableMelds).map(player => ` ${player}: ${gameInfo.tableMelds[player]}`)}`);
 
     let cardIndex=-1;
     while (cardIndex==-1){
@@ -119,7 +119,7 @@ async function addToMeld(game){
 
 //replace a card (should be joker) with a specified card in player's hand
 async function replaceMeldCard(game){
-    gameInfo = game.getGameInfoForPlayer();
+    let gameInfo = game.getGameInfoForPlayer();
     if (!gameInfo.melds){
         console.log('No melds at the moment.');
         return;

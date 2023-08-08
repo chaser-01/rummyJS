@@ -48,7 +48,7 @@ export class PokerDeck extends Deck{
 
         //returns top card of discard pile
         getTopOfDiscardPile(){
-            return this._discardPile._stack[0];
+            return this._discardPile._stack[this.getDiscardPileSize()-1];
         }
 
         //add a card to the discard pile
