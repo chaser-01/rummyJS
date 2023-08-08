@@ -34,14 +34,14 @@ export class Deck{
         }
       }
     
-    //draws *count* cards and removes them from deck.
+    //draws *count* cards from top of deck.
     draw(count){
-        let drawnCards = this._stack.splice(0, count);
+        let drawnCards = this._stack.splice(this._stack.length-count, count);
         return drawnCards;
     }
 
     //add cards array to top of the deck
     addToTop(cards){
-        this._stack = this._stack.concat(cards);
+        this._stack.push(...cards);
     }
 }
