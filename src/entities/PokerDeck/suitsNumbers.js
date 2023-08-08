@@ -41,5 +41,6 @@ export function suitNumberValue(suit, number){
         suitValue = 0;
         numberValue = 0;
     }
-    return [suitValue, numberValue];
+
+    return [parseInt(suitValue), parseInt(numberValue)];
 }

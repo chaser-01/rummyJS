@@ -9,6 +9,7 @@ import { Meld } from "../Meld/Meld.js";
 //some auxiliary functions
 import { loadConfigFile } from "./auxiliary/loadConfig.js";
 import { setCardsToDealAndNumberOfDecks, setCardsToDraw, setCardsToDrawDiscardPile, setJokerOption, setWildcardOption } from "./auxiliary/setGameOptions.js";
+import { isMeld } from "../Meld/isMeld.js"; 
 
 //path functions, for getting config file regardless of variant location
 import * as path from 'path';
@@ -79,7 +80,6 @@ export class Game {
         this.gameStatus = this.GameStatus.ROUND_ENDED;
 
         [this.deck, this.jokerNumber, this.validationCards] = this.initializeDeckJokerAndValidationCards();
-        if (this.useWildcard) this.jokerNumber = this.getWildcardNumber();
     }
 
 
@@ -160,6 +160,7 @@ export class Game {
         //wildcard number is (currentRound+1)%(size of deck numbers)
         let jokerNumber;
         if (this.useJoker) jokerNumber = 'Joker';
+        else if (this.useWildcard) jokerNumber = this.getWildcardNumber(deck);
         else jokerNumber = undefined;
 
         return [deck, jokerNumber, validationCards];
@@ -173,9 +174,9 @@ export class Game {
      * @modifies {jokerNumber}
      * @returns {string | boolean}
      */
-    getWildcardNumber(){
+    getWildcardNumber(deck){
         if (this.useWildcard){
-            return this.deck.numbers[this.currentRound+1 % Object.keys(this.deck.numbers).length];
+            return deck.numbers[this.currentRound+1 % Object.keys(deck.numbers).length];
         }
         else return false;
     }
@@ -215,7 +216,11 @@ export class Game {
 
         //sort checkCards and compare with validationCards (as strings, since they don't reference the same card objects)
         checkCards.sort(Card.compareCardsSuitFirst);    
-        if (JSON.stringify(checkCards) != JSON.stringify((this.validationCards))){
+        if (JSON.stringify(checkCards) != JSON.stringify(this.validationCards)){
+            let checkCardsStr = checkCards.map(card => ` ${card}`);
+            let validationCardsStr = this.validationCards.map(card => ` ${card}`); 
+            console.log(`checkCards: \n ${checkCardsStr} \n validationCards: \n ${validationCardsStr}`)
+
             this.logger.logWarning('validateGameState', undefined, undefined, 'Invalid game state'); 
             this.setGameStatus(this.GameStatus.END_GAME);
             return false;
@@ -264,7 +269,7 @@ export class Game {
     //TO DO: OR the wildcard has run through entire deck? OR hit some limit on number of rounds? we'll see
     checkGameEnded(){
         let still_playing=0;
-        for (player of this.players){
+        for (const player of this.players){
             if (player.playing) still_playing++;
         }
 
@@ -332,7 +337,6 @@ export class Game {
 
         //reset deck and get the next jokerNumber
         [this.deck, this.jokerNumber, this.validationCards] = this.initializeDeckJokerAndValidationCards();
-        if (this.useWildcard) this.jokerNumber = this.getWildcardNumber();
         
         //deal cards
         for (const player of this.players){
@@ -549,25 +553,29 @@ export class Game {
 
         //Create a set, indexSet,  from indexArray (ensures card indexes are unique, since a set's elements will be unique)
         //Copy player's hand to playerHandCopy, to copy back if invalid meld/card index
-        //Then, check that each index is valid, then draw corresponding card from hand and place into an array.
+        //Then, check that each index is valid, then copy corresponding card from hand and place into an array.
         let indexSet = new Set(indexArray);
         let player = this.players[this.currentPlayerIndex];
         let playerHandCopy = player.hand.slice();
         let meldCards = [];
+
         for (const index of indexSet){
             if (isNaN(index) || index>player.hand.length){
                 this.logger.logWarning('createMeld', this.players[this.currentPlayerIndex].id, {indexArray}, 'Invalid index array');
                 player.hand = playerHandCopy;
                 return false;
             }
-            meldCards.push(...player.hand.splice(index, 1));
-        } 
+            meldCards.push(...player.hand.slice(index, index+1)); 
+        }
+        
+        //THEN remove the cards from the hand. If we did so earlier, the hand size would decrease, making the card indexes invalid
+        for (const index of indexSet) player.hand.splice(index, 1);
 
-        //Create the meld object, and check if meld is valid.
-        //If so, add the meld to player's melds; else, reset the player's hand
-        let meld = new Meld(meldCards, this.jokerNumber);
-        if (meld.isComplete()){
-            player.addMeld(meld);
+        //If meld is valid, create the object and add it to player's melds; else, reset the player's hand
+        if (isMeld(meldCards, this.jokerNumber)){
+            let newMeld = new Meld(meldCards, this.jokerNumber);
+            console.log(newMeld);
+            player.addMeld(newMeld);
             this.logger.logGameAction('createMeld', this.players[this.currentPlayerIndex].id, {indexArray});
             return true;
         }
@@ -582,7 +590,8 @@ export class Game {
 
 
     /**
-     *  
+     * Creates a forfeit for the current player if they declared an invalid meld. (Some Rummy variants have such a rule)
+     * Called automatically by createMeld in the case of invalid meld.
      */
     invalidMeldDeclaration(){
 

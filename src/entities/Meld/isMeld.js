@@ -47,7 +47,10 @@ function isValidSequence(cards, jokerNumber=0) {
       difference--;
       jokerCount--;
     }
-    if (jokerCount<=0 && difference>1) isValid = false; 
+    if (jokerCount<=0 && difference>1){
+      isValid = false;
+      break;
+    }
   }
   return isValid;
 }
@@ -64,7 +67,7 @@ Checks for validity by:
 function isValidSet(cards, jokerNumber=0, maxSetSize=4) {
   let jokerCount=0;
   let jokerlessCards=cards;
-  if (jokerNumber!=0) [jokerlessCards, jokerCount] = filterJokers(cards);
+  if (jokerNumber!=0) [jokerlessCards, jokerCount] = filterJokers(cards, jokerNumber);
   jokerlessCards.sort(Card.compareCardsNumberFirst);
 
   //Check that each card's number is correct

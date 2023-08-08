@@ -25,11 +25,12 @@ async function sortPlayerHand(game){
 
 //specify some card indexes to create a meld out of the player's hand
 async function createMeld(game){
-    let cardIndex;
+    let cardIndex=0;
     let indexArray = [];
     while (cardIndex!=-1){
         cardIndex = await getInput('Input index of the card you wish to add to the meld (-1 to stop): ', input => {
-            if (isNaN(parseInt(input))){
+            input = parseInt(input);
+            if (isNaN(input)){
                 console.log('Invalid input; please try again.');
                 return;
             }

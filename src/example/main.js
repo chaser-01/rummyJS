@@ -27,11 +27,11 @@ async function main(){
     game.nextRound();
 
     //main game loop
-    while (game.gameStatus !== game.GameStatus.END_GAME){
-        while (game.gameStatus !== game.GameStatus.ROUND_ENDED){
-            await playerTurn(game);
+    while (game.gameStatus != game.GameStatus.END_GAME){
+        while (game.gameStatus != game.GameStatus.ROUND_ENDED || game.gameStatus != game.GameStatus.END_GAME){
+            if (game.gameStatus == game.GameStatus.PLAYER_TURN) await playerTurn(game);
             game.nextPlayer();
-            await playerDraw(game);
+            if (game.gameStatus == game.GameStatus.PLAYER_TO_DRAW) await playerDraw(game);
         }
         console.log('Round has ended! Score: ');
         game.nextRound();

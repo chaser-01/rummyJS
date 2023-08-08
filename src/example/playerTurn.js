@@ -65,4 +65,5 @@ export async function playerTurn(game){
                 break;
         }
     }
+    console.log(`currentstatus: ${game.gameStatus.description}`)
 }
