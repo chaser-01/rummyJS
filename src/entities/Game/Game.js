@@ -208,7 +208,6 @@ export class Game {
                 if (meld.cards){
                     checkCards.push(...meld.cards);
                     if (!meld.isComplete(this.jokerNumber)) { 
-                        console.log(`bastard: ${player.id} -> ${meld.cards}`)
                         this.logger.logWarning('validateGameState', undefined, undefined, `Player ${player.id} has invalid meld: ${meld.cards}`);
                         this.setGameStatus(this.GameStatus.END_GAME);
                         return false;
@@ -571,14 +570,15 @@ export class Game {
             meldCards.push(...this.players[this.currentPlayerIndex].hand.slice(index, index+1)); 
         }
         
-        //then search and remove the cards from the hand
+        //then search and remove the cards from the hand 
+        //if this is done while getting cards, card indexes in indexArray become invalid due to changing hand size
         for (const meldCard of meldCards){
             this.players[this.currentPlayerIndex].hand = this.players[this.currentPlayerIndex].hand.filter(card =>{
                 return !(card.suit==meldCard.suit && card.number==meldCard.number);
             })
         }
 
-        //If meld is valid, create the Meld object and add it to player's melds; else, reset the player's hand
+        //if meld is valid, create the Meld object and add it to player's melds; else, reset the player's hand
         if (isMeld(meldCards, this.jokerNumber)){
             let newMeld = new Meld(meldCards, this.jokerNumber);
             this.players[this.currentPlayerIndex].addMeld(newMeld);

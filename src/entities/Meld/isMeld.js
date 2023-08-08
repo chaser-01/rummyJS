@@ -1,10 +1,12 @@
 import { Card } from "../PokerDeck/Card.js";
 
-/*
-Main function for checking validity of a meld, by checking if it's a sequence or set.
-Accepts an array of cards, cards, optional joker number, jokerNumber, and optional max set size (defaults to 4).
-Outputs a true/false.
-*/
+/**
+ * Checks if an array of cards forms a valid meld - ie, a set or sequence.
+ * @param {Card[]} cards 
+ * @param {string} jokerNumber - Optional joker that can replace any card in the meld
+ * @param {int} maxSetSize - Optional max limit for the size of a set; defaults to 4
+ * @returns 
+ */
 export function isMeld(cards, jokerNumber=0, maxSetSize=4) {
 
     if (Array.isArray(cards) && cards.length>=3 && (isValidSequence(cards, jokerNumber) || isValidSet(cards, jokerNumber, maxSetSize))) {
@@ -15,20 +17,14 @@ export function isMeld(cards, jokerNumber=0, maxSetSize=4) {
   }
 
 
-/* 
-Check if the cards form a valid sequence.
-Accepts the array of cards and an optional jokerNumber.
-Checks for validity by:
-  -Call filterJokers() to filter & count jokers
-  -Sort the cards
-  -Loop over the cards:
-    -If a card is not sequenced with the previous card (difference>1), use a joker card to fill the difference.
-    -If, at any point, we can't fill the difference up to 1 with jokers, return false.
-    -Else, return true.
-
-  -Return the result of the loop, as true/false.
-*/
+/**
+ * Checks if an array of cards forms a valid sequence.
+ * @param {Card[]} cards 
+ * @param {string} jokerNumber 
+ * @returns {boolean}
+ */
 function isValidSequence(cards, jokerNumber=0) {
+  //filter out jokers and sort the cards
   let jokerCount=0;
   let jokerlessCards=cards;
   if (jokerNumber!=0) [jokerlessCards, jokerCount] = filterJokers(cards, jokerNumber);
@@ -39,14 +35,17 @@ function isValidSequence(cards, jokerNumber=0) {
   for (let i=0; i<jokerlessCards.length; i++){
     if (i==0) continue;
 
+    //calculate adjacent cards' values (increasing suits -> +100, increasing numbers -> +1)
     const currentCardValue = jokerlessCards[i].cardValueSuitFirst();
     const prevCardValue = jokerlessCards[i-1].cardValueSuitFirst();
     let difference = currentCardValue - prevCardValue;
 
+    //while 2 cards aren't adjacent numbers and same suit, use 1 joker (decrement jokerCount)
     while (difference>1 && jokerCount>0){
       difference--;
       jokerCount--;
     }
+    //if the gap can't be filled by jokers, it isn't a valid sequence, so return false
     if (jokerCount<=0 && difference>1){
       isValid = false;
       break;
@@ -56,14 +55,13 @@ function isValidSequence(cards, jokerNumber=0) {
 }
 
 
-/* 
-Check if the cards form a valid set.
-Accepts an array of cards and an option jokerNumber.
-Checks for validity by:
-  -Counting number of instances of each card number.
-  -Check that the count of every card number + number of jokers is 3 or 4.
-  -Returns true if so; else false.
-*/
+/**
+ * Checks if an array of cards forms a valid set.
+ * @param {Card[]} cards 
+ * @param {string} jokerNumber 
+ * @param {int} maxSetSize 
+ * @returns {boolean}
+ */
 function isValidSet(cards, jokerNumber=0, maxSetSize=4) {
   let jokerCount=0;
   let jokerlessCards=cards;
