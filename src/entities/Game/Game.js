@@ -205,11 +205,14 @@ export class Game {
         for (const player of this.players){
             checkCards.push(...player.hand);
             for (const meld of player.melds){
-                if (meld) checkCards.push(...meld.cards);
-                if (!meld.isComplete()) { 
-                    this.logger.logWarning('validateGameState', undefined, undefined, `Player ${player.id} has invalid meld: ${meld.cards}`);
-                    this.setGameStatus(this.GameStatus.END_GAME);
-                    return false;
+                if (meld.cards){
+                    checkCards.push(...meld.cards);
+                    if (!meld.isComplete(this.jokerNumber)) { 
+                        console.log(`bastard: ${player.id} -> ${meld.cards}`)
+                        this.logger.logWarning('validateGameState', undefined, undefined, `Player ${player.id} has invalid meld: ${meld.cards}`);
+                        this.setGameStatus(this.GameStatus.END_GAME);
+                        return false;
+                    }
                 }
             }
         }
@@ -551,39 +554,43 @@ export class Game {
     createMeld(indexArray){
         if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN)) return false;
 
-        //Create a set, indexSet,  from indexArray (ensures card indexes are unique, since a set's elements will be unique)
-        //Copy player's hand to playerHandCopy, to copy back if invalid meld/card index
-        //Then, check that each index is valid, then copy corresponding card from hand and place into an array.
+        //create set so indexes are all unique
         let indexSet = new Set(indexArray);
-        let player = this.players[this.currentPlayerIndex];
-        let playerHandCopy = player.hand.slice();
-        let meldCards = [];
 
+        //get copy of player's hand, to copy back if meld is invalid
+        let playerHandCopy = this.players[this.currentPlayerIndex].hand.slice();
+
+        //check if each index is valid, then add the corresponding card to meldCards
+        let meldCards = [];
         for (const index of indexSet){
-            if (isNaN(index) || index>player.hand.length){
+            if (isNaN(index) || index>this.players[this.currentPlayerIndex].hand.length){
                 this.logger.logWarning('createMeld', this.players[this.currentPlayerIndex].id, {indexArray}, 'Invalid index array');
-                player.hand = playerHandCopy;
+                this.players[this.currentPlayerIndex].hand = playerHandCopy;
                 return false;
             }
-            meldCards.push(...player.hand.slice(index, index+1)); 
+            meldCards.push(...this.players[this.currentPlayerIndex].hand.slice(index, index+1)); 
         }
         
-        //THEN remove the cards from the hand. If we did so earlier, the hand size would decrease, making the card indexes invalid
-        for (const index of indexSet) player.hand.splice(index, 1);
+        //then search and remove the cards from the hand
+        for (const meldCard of meldCards){
+            this.players[this.currentPlayerIndex].hand = this.players[this.currentPlayerIndex].hand.filter(card =>{
+                return !(card.suit==meldCard.suit && card.number==meldCard.number);
+            })
+        }
 
-        //If meld is valid, create the object and add it to player's melds; else, reset the player's hand
+        //If meld is valid, create the Meld object and add it to player's melds; else, reset the player's hand
         if (isMeld(meldCards, this.jokerNumber)){
             let newMeld = new Meld(meldCards, this.jokerNumber);
-            console.log(newMeld);
-            player.addMeld(newMeld);
+            this.players[this.currentPlayerIndex].addMeld(newMeld);
             this.logger.logGameAction('createMeld', this.players[this.currentPlayerIndex].id, {indexArray});
             return true;
         }
     
         else{
+            this.invalidMeldDeclaration();
             this.logger.logWarning('createMeld', this.players[this.currentPlayerIndex].id, {indexArray}, 'Invalid meld');
             this.invalidMeldDeclaration();
-            player.hand = playerHandCopy;
+            this.players[this.currentPlayerIndex].hand = playerHandCopy;
             return false;
         }
     }
@@ -592,9 +599,10 @@ export class Game {
     /**
      * Creates a forfeit for the current player if they declared an invalid meld. (Some Rummy variants have such a rule)
      * Called automatically by createMeld in the case of invalid meld.
+     * Doesn't do anything ATM but can be overridden if needed
      */
     invalidMeldDeclaration(){
-
+        return;
     }
 
 

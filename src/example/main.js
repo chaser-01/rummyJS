@@ -28,7 +28,7 @@ async function main(){
 
     //main game loop
     while (game.gameStatus != game.GameStatus.END_GAME){
-        while (game.gameStatus != game.GameStatus.ROUND_ENDED || game.gameStatus != game.GameStatus.END_GAME){
+        while (game.gameStatus != game.GameStatus.ROUND_ENDED && game.gameStatus != game.GameStatus.END_GAME){
             if (game.gameStatus == game.GameStatus.PLAYER_TURN) await playerTurn(game);
             game.nextPlayer();
             if (game.gameStatus == game.GameStatus.PLAYER_TO_DRAW) await playerDraw(game);

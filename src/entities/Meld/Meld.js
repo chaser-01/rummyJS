@@ -1,28 +1,45 @@
 import {isMeld} from './isMeld.js';
 
+
+/**
+ * Represents a Rummy meld.
+ * Just an array of cards, but holds some useful functionality + stores joker number for doing so (if applicable)
+ */
 export class Meld {
+    /**
+     * Creates a Meld; verifies that the cards form a valid meld first.
+     * @constructor
+     * @param {*} cards
+     * @param {string} jokerNumber - optional joker number, so that it needn't be passed in again later on
+     */
     constructor(cards, jokerNumber=0){
-        if (this.isComplete(cards, jokerNumber)){
+        if (isMeld(cards, jokerNumber)){
             this.cards = cards;
         }
         else{
             this.cards = [];
         }
+        this.jokerNumber = jokerNumber;
     }
 
-    /*
-    Verifies a meld with isMeld, in-class.
-    Accepts an array of cards and an optional jokerNumber; returns true/false.
-    */
-    isComplete(cards, jokerNumber=0){
-        return isMeld(cards, jokerNumber);
+    
+    /**
+     * Verifies the instance's validity as a meld.
+     * @param {string} jokerNumber 
+     * @returns {boolean}
+     */
+    isComplete(jokerNumber=this.jokerNumber){
+        return isMeld(this.cards, jokerNumber);
     }
 
-    /*
-    Verifies that newCard can be added and still form a valid meld.
-    Accepts a card newCard, returns true/false + modifies cards.
-    */
-    addCard(newCard, jokerNumber=0){
+
+    /**
+     * Verifies that a card can be added to the meld, and still form a valid meld.
+     * @param {*} newCard 
+     * @param {*} jokerNumber 
+     * @returns  {boolean}
+     */
+    addCard(newCard, jokerNumber=this.jokerNumber){
         if (isComplete([...this.cards, newCard], jokerNumber)){
             this.cards.push(newCard);
             return true;
@@ -30,12 +47,17 @@ export class Meld {
         return false;
     }
 
-    /*
-    Verifies that the card at replacedIndex can be replaced with newCard, and still form a valid meld.
-    Useful for where the replacing card must be drag-dropped to the specific to-be-replaced card within a meld.
-    Accepts a card newCard and to-be-replaced index replacedIndex, returns true/false + modifies cards.
-    */
-    replaceCard(newCard, replacedIndex, jokerNumber=0){
+
+    /**
+     * Verifies that a card in the meld can be replaced, and still form a valid meld.
+     * Only jokers should be replaceable... but not too sure.
+     * Use this for manually picking the card to be replaced.
+     * @param {*} newCard 
+     * @param {*} replacedIndex 
+     * @param {*} jokerNumber 
+     * @returns {boolean}
+     */
+    replaceCard(newCard, replacedIndex, jokerNumber=this.jokerNumber){
         if (this.cards[replacedIndex].number != jokerNumber) return false;
         if (isComplete([...this.cards].splice(replacedIndex, 1, newCard), jokerNumber)){
             this.cards.splice(replacedIndex, 1, newCard);
@@ -44,12 +66,15 @@ export class Meld {
         return false;
     }
 
-    /*
-    Verifies that any joker (if any exist) can be replaced with newCard, and still form a valid meld.
-    Useful for checking if any jokers in a meld can be replaced with newCard.
-    Accepts a card newCard, returns true/false + modifies cards.
-    */
-   replaceAnyJoker(newCard){
+    
+    /**
+     * Verifies that any joker in the meld can be replaced, and still form a valid meld.
+     * 
+     * @param {*} newCard 
+     * @param {*} jokerNumber 
+     * @returns {boolean}
+     */
+   replaceAnyJoker(newCard, jokerNumber=this.jokerNumber){
         for (let i=0; i<this.cards.length; i++){
             if (this.cards[i].number === jokerNumber){
                 if (isComplete([...this.cards].splice(i, 1, newCard), jokerNumber)){
@@ -61,7 +86,11 @@ export class Meld {
         return false;
    }
 
-   //String representation of a meld
+   
+   /**
+    * A string representation for the meld.
+    * @override
+    */
    toString(){
         let meldStr = '';
         this.cards.forEach(card => meldStr + `${card} `)
