@@ -199,7 +199,7 @@ async function endTurn(game){
         })
     }
     if (game.endTurn(cardIndex)){
-        console.log('Turn ended. Next player!');
+        console.log('Ending turn...');
     }
     else console.log('Error occurred. Please try again.');
 }

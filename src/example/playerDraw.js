@@ -12,7 +12,6 @@ export async function playerDraw(game){
             2. ${game.cardsToDrawDiscardPile} cards from discard pile (Top card: ${gameInfo.topDiscardCard})
     `, input => {
         input = parseInt(input);
-
         if (isNaN(input) || (input!=1 && input!=2)){
             console.log('Invalid input. Try again.');
             return -1;
@@ -21,7 +20,7 @@ export async function playerDraw(game){
         if (input===1){
             game.drawFromDeck();
             let curPlayerHand = game.getGameInfoForPlayer().currentPlayer.hand;
-            console.log(`Drew: ${curPlayerHand.splice(curPlayerHand.length-game.cardsToDraw, game.cardsToDraw)}`);
+            console.log(`Drew: ${curPlayerHand.slice(curPlayerHand.length-game.cardsToDraw, curPlayerHand.length-1)}`);
         }
         
         else if (input===2){
