@@ -7,7 +7,7 @@ export function printGameInfo(game){
     console.log(`Top discard pile card: ${gameInfo.topDiscardCard}`);
     console.log(`Discard pile size: ${gameInfo.discardPileSize}`);
     console.log(`Current player (${gameInfo.currentPlayer.id}) hand:${gameInfo.currentPlayer.hand.map(card => ` ${card}`)} (${gameInfo.currentPlayer.hand.length} cards)`);;
-    console.log(`Table melds:${Object.keys(gameInfo.tableMelds).map(player => `\n${player}: ${gameInfo.tableMelds[player]}`)}`);
+    console.log(`Table melds:${Object.keys(gameInfo.tableMelds).map(player => `\n${player}: ${gameInfo.tableMelds[player].map(meld => `[${meld}]`)}`)}`);
     console.log('-----');
     return;
 }

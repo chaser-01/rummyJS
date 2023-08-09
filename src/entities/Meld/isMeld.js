@@ -63,17 +63,19 @@ function isValidSequence(cards, jokerNumber=0) {
  * @returns {boolean}
  */
 function isValidSet(cards, jokerNumber=0, maxSetSize=4) {
+  //filter out jokers and sort the cards
   let jokerCount=0;
   let jokerlessCards=cards;
   if (jokerNumber!=0) [jokerlessCards, jokerCount] = filterJokers(cards, jokerNumber);
   jokerlessCards.sort(Card.compareCardsNumberFirst);
 
-  //Check that each card's number is correct
+  //check that each card's number is the same
   let isValid = true;
   for (let i = 0; i < jokerlessCards.length; i++) {
     if (jokerlessCards[i].number != jokerlessCards[0].number) isValid = false;
   }
 
+  //check that the set doesn't exceed max size
   if (isValid && jokerlessCards.length+jokerCount>maxSetSize) isValid = false;
   return isValid;
 }

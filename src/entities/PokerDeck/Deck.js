@@ -1,22 +1,38 @@
-//Code mostly adopted from card-deck package but modified a bit
+/**
+ * Represents a generic deck (literally an array with some generic functionality).
+ */
 export class Deck{
+    /**
+     * Creates a Deck.
+     * @param {[*]} cards 
+     * @returns 
+     */
     constructor(cards=[]){
         if (!Array.isArray(cards)) this._stack = [];
         else this._stack = cards;
         return this;
     }
 
-    //returns cards
+    /**
+     * Returns the cards.
+     * @returns {[*]}
+     */
     getCards(){
         return this._stack;
     }
 
-    //returns deck size
+    /**
+     * Returns the deck size.
+     * @returns {int}
+     */
     remaining(){
         return this._stack.length;
     }
 
-    //Fisher–Yates implementation adapted from http://bost.ocks.org/mike/shuffle/
+    /**
+     * Shuffles the deck (Fisher–Yates implementation adapted from http://bost.ocks.org/mike/shuffle/)
+     * @modifies {_stack}
+     */
     shuffle() {
         var remaining = this._stack.length;
         var tmp;
@@ -34,14 +50,25 @@ export class Deck{
         }
       }
     
-    //draws *count* cards from top of deck.
+    
+    /**
+     * Draws specified amount of cards from top of the deck.
+     * @param {int} count 
+     * @returns {[*]}
+     */
     draw(count){
+        if (!count) return false;
         let drawnCards = this._stack.splice(this._stack.length-count, count);
         return drawnCards;
     }
 
-    //add cards array to top of the deck
+    /**
+     * Adds cards to the top of the deck.
+     * @param {[*]} cards 
+     * @returns 
+     */
     addToTop(cards){
-        this._stack.push(...cards);
+        if (!Array.isArray(cards)) return;
+        this._stack.push(...cards); 
     }
 }

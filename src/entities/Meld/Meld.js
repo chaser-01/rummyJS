@@ -91,6 +91,6 @@ export class Meld {
     * @override
     */
    toString(){
-        return `${this.cards.map(card =>` ${card}`)}`
+        return `${this.cards.map(card =>`${card}`)}`
    }
 }
