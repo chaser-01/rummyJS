@@ -45,22 +45,22 @@ export class Game {
      * Creates a Game.
      * Don't override this in variants as it may mess with initialization flow; instead override individual functions as required.
      * @constructor
-     * @modifies {gameId} - Optional, for uniquely identifying a game
-     * @modifies {config} - The game's config file
-     * @modifies {logger} - Used for logging game/player actions
-     * @modifies {players} - Array of player objects
-     * @modifies {quitPlayers} - Array of players who have quit
-     * @modifies {initialOptions} - Stores the options that were passed into constructor
-     * @modifies {score} - Tracks/evaluates player scores
-     * @modifies {currentPlayerIndex} - Tracks the current player
-     * @modifies {currentRound} - Tracks the current round
-     * @modifies {gameStatus} - Tracks the current game status (and what actions can be taken)
-     * @modifies {deck} - The game deck
-     * @modifies {jokerNumber} - The joker (can be printed, or a wildcard)
-     * @modifies {validationCards} - A copy of the deck, for validation later on
-     * @param {int[]} playerIds - An array of player's IDs
-     * @param {GameOption} options - Optional options to configure the game (see GameOption class)
-     * @param {int} gameId - Optional game ID
+     * @property {string} gameId                        - Optional, for uniquely identifying a game
+     * @property {Object} config                        - The game's config file
+     * @property {Logger} logger                        - Used for logging game/player actions
+     * @property {Player[]} players                     - Array of player objects
+     * @property {Player[]} quitPlayers                 - Array of players who have quit
+     * @property {GameOptions} initialOptions           - Stores the options that were passed into constructor
+     * @property {GameScore} score                      - Tracks/evaluates player scores
+     * @property {int} currentPlayerIndex               - Tracks the current player
+     * @property {int} currentRound                     - Tracks the current round
+     * @property {GameStatus} gameStatus                - Tracks the current game status (and what actions can be taken)
+     * @property {PokerDeck} deck                       - The game deck
+     * @property {string} jokerNumber                   - The joker (can be printed, or a wildcard)
+     * @property {Card[]} validationCards               - A copy of the deck cards, for validation later on
+     * @param {int[]} playerIds                             
+     * @param {GameOption} options                          
+     * @param {int} gameId                                  
      */
     constructor(playerIds, options={}, gameId=undefined){
         if (gameId) this.gameId = gameId;
@@ -205,13 +205,12 @@ export class Game {
         for (const player of this.players){
             checkCards.push(...player.hand);
             for (const meld of player.melds){
-                if (meld.cards){
-                    checkCards.push(...meld.cards);
-                    if (!meld.isComplete(this.jokerNumber)) { 
-                        this.logger.logWarning('validateGameState', undefined, undefined, `Player ${player.id} has invalid meld: ${meld.cards}`);
-                        this.setGameStatus(this.GameStatus.END_GAME);
-                        return false;
-                    }
+                if (meld.cards && meld.isComplete(undefined, this.jokerNumber)) checkCards.push(...meld.cards);
+                else { 
+                    console.log(`fuck ${meld}`)
+                    this.logger.logWarning('validateGameState', undefined, undefined, `Player ${player.id} has invalid meld: ${meld.cards}`);
+                    this.setGameStatus(this.GameStatus.END_GAME);
+                    return false;
                 }
             }
         }
@@ -619,9 +618,13 @@ export class Game {
     addToMeld(addingCardIndex, meldOwnerIndex, meldIndex){
         if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN)) return;
 
+        if (addingCardIndex >= this.players[this.currentPlayerIndex].hand.length ||
+            meldOwnerIndex >= this.players.length ||
+            meldIndex >= this.players[meldOwnerIndex]) 
+            return false;
+
         let potentialMeld = this.players[meldOwnerIndex].melds[meldIndex];
         let addingCard = this.players[this.currentPlayerIndex].hand[addingCardIndex];
-        if (!potentialMeld || !addingCard) return false;
 
         if (potentialMeld.addCard(addingCard, this.jokerNumber)){
             this.players[meldOwnerIndex].melds[meldIndex] = potentialMeld;
@@ -657,12 +660,20 @@ export class Game {
     replaceMeldCard(replacingCardIndex, meldOwnerIndex, meldIndex, replacedCardIndex){
         if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN)) return;
 
+        if (replacingCardIndex >= this.players[this.currentPlayerIndex].hand.length ||
+            meldOwnerIndex >= this.players.length ||
+            meldIndex >= this.players[meldOwnerIndex].melds.length ||
+            replacedCardIndex >= this.players[meldOwnerIndex].melds[meldIndex].cards.length) 
+            return false;
+
         let potentialMeld = this.players[meldOwnerIndex].melds[meldIndex];
         let replacingCard = this.players[this.currentPlayerIndex].hand[replacingCardIndex];
+        let replacedCard = potentialMeld.replaceCard(replacingCard, replacedCardIndex, this.jokerNumber);
 
-        if (potentialMeld.replaceCard(replacingCard, replacingIndex, this.jokerNumber)){
+        if (replacedCard){
             this.players[meldOwnerIndex].melds[meldIndex] = potentialMeld;
             this.players[this.currentPlayerIndex].hand.splice(replacingCardIndex, 1);
+            this.players[this.currentPlayerIndex].addToHand(replacedCard);
 
             this.logger.logGameAction(
                 'replaceMeldCard',

@@ -28,19 +28,20 @@ export class Meld {
      * @param {string} jokerNumber 
      * @returns {boolean}
      */
-    isComplete(jokerNumber=this.jokerNumber){
-        return isMeld(this.cards, jokerNumber);
+    isComplete(cards=this.cards, jokerNumber=this.jokerNumber){
+        return isMeld(cards, jokerNumber);
     }
 
 
     /**
      * Verifies that a card can be added to the meld, and still form a valid meld.
-     * @param {*} newCard 
-     * @param {*} jokerNumber 
+     * @param {Card[]} newCard 
+     * @param {string} jokerNumber 
      * @returns  {boolean}
      */
     addCard(newCard, jokerNumber=this.jokerNumber){
-        if (isComplete([...this.cards, newCard], jokerNumber)){
+        let modifiedCards = [...this.cards].push(newCard);
+        if (isMeld(modifiedCards), jokerNumber){
             this.cards.push(newCard);
             return true;
         }
@@ -51,14 +52,17 @@ export class Meld {
     /**
      * Attempts to replace the specified card with a new card, and verify the meld's validity.
      * Returns the replaced card if successful, and false if not.
-     * @param {*} newCard 
-     * @param {*} replacedIndex 
-     * @param {*} jokerNumber 
+     * @param {Card[]} newCard 
+     * @param {int} replacedIndex 
+     * @param {string} jokerNumber 
      * @returns {Card|boolean}
      */
     replaceCard(newCard, replacedIndex, jokerNumber=this.jokerNumber){
         if (this.cards[replacedIndex].number != jokerNumber) return false;
-        if (isComplete([...this.cards].splice(replacedIndex, 1, newCard), jokerNumber)){
+
+        let modifiedCards = [...this.cards];
+        modifiedCards.splice(replacedIndex, 1, newCard);
+        if (isMeld(modifiedCards, jokerNumber)){
             let replacedCard = this.cards.splice(replacedIndex, 1, newCard);
             return replacedCard;
         }
@@ -76,7 +80,7 @@ export class Meld {
    replaceAnyJoker(newCard, jokerNumber=this.jokerNumber){
         for (let i=0; i<this.cards.length; i++){
             if (this.cards[i].number === jokerNumber){
-                if (isComplete([...this.cards].splice(i, 1, newCard), jokerNumber)){
+                if (this.isComplete([...this.cards].splice(i, 1, newCard), jokerNumber)){
                     let replacedCard = this.cards.splice(i, 1, newCard);
                     return replacedCard;
                 }

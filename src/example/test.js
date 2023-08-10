@@ -8,10 +8,8 @@ arr.push(new Card("Hearts", "Ace"))
 arr.push(new Card("Hearts", "2"))
 let meld = new Meld(arr, 2)
 
-let arr2 = []
-arr2.push(new Card("Clubs", "8"))
-arr2.push(new Card("Clubs", "9"))
-arr2.push(new Card("Clubs", "10"))
-let meld2 = new Meld(arr2, 2)
+console.log(`${meld}`)
 
-console.log(`${meld}, ${meld2}`)
+meld.replaceCard(new Card("Spades", "Ace"), 2, "2");
+meld.addCard(new Card("Diamonds", "Ace"))
+console.log(`${meld}`)

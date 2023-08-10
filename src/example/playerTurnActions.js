@@ -75,37 +75,40 @@ async function addToMeld(game){
     while (cardIndex==-1){
         cardIndex = await getInput('Choose your card to add to a meld: ', input => {
             input = parseInt(input);
-            if (isNaN(input) || input>gameInfo.currentPlayer.hand.length || input<0){
+            if (isNaN(input) || !gameInfo.currentPlayer.hand[input] || input<0){
                 console.log('Invalid index. Try again.');
                 return -1;
-            }
+            }     
             return input;
         });
     }
+    console.log(`Chosen card: ${gameInfo.currentPlayer.hand[cardIndex]}`);
 
     let meldOwnerIndex=-1;
     while (meldOwnerIndex==-1){
         meldOwnerIndex = await getInput('Choose the target player: ', input => {
             input = parseInt(input);
-            if (isNaN(input) || input>Object.keys(gameInfo.tableMelds).length || input<0){
+            if (isNaN(input) || !gameInfo.tableMelds[input] || input<0){
                 console.log('Invalid index. Try again.');
                 return -1;
             }
             return input;
         });
     }
+    console.log(`Chosen player: ${meldOwnerIndex}`);
 
     let meldIndex=-1;
     while (meldIndex==-1){
         meldIndex = await getInput('Choose the target meld: ', input => {
             input = parseInt(input);
-            if (isNaN(input) || input>gameInfo.tableMelds[meldOwnerIndex].length || input<0){
+            if (isNaN(input) || !gameInfo.tableMelds[meldOwnerIndex][input] || input<0){
                 console.log('Invalid index. Try again.');
                 return -1;
             }
             return input;
         })
     }
+    console.log(`Chosen meld: ${gameInfo.tableMelds[meldOwnerIndex][meldIndex]}`);
     
     if (game.addToMeld(cardIndex, meldOwnerIndex, meldIndex)){
         console.log('Successfully added!');
@@ -120,18 +123,18 @@ async function addToMeld(game){
 //replace a card (should be joker) with a specified card in player's hand
 async function replaceMeldCard(game){
     let gameInfo = game.getGameInfoForPlayer();
-    if (!gameInfo.melds){
+    if (!gameInfo.tableMelds){
         console.log('No melds at the moment.');
         return;
     }
 
-    console.log(`Table melds:${Object.keys(gameInfo.tableMelds).map(player => ` ${player}: ${gameInfo.tableMelds.player}`)}`);
+    console.log(`Table melds:${Object.keys(gameInfo.tableMelds).map(player => `\n${player}: ${gameInfo.tableMelds[player].map(meld => `[${meld}]`)}`)}`);
 
-    let cardIndex=0;
+    let cardIndex=-1;
     while (cardIndex==-1){
         cardIndex = await getInput('Choose your card to add to a meld: ', input => {
             input = parseInt(input);
-            if (isNaN(input) || input>gameInfo.currentPlayer.hand.length || input<0){
+            if (isNaN(input) || input<0 || !gameInfo.currentPlayer.hand[input]){
                 console.log('Invalid index. Try again.');
                 return -1;
             }
@@ -143,7 +146,7 @@ async function replaceMeldCard(game){
     while (meldOwnerIndex==-1){
         meldOwnerIndex = await getInput('Choose the target player: ', input => {
             input = parseInt(input);
-            if (isNaN(input) || input>Object.keys(gameInfo.tableMelds).length || input<0){
+            if (isNaN(input) || input<0 || !gameInfo.tableMelds[input]){
                 console.log('Invalid index. Try again.');
                 return -1;
             }
@@ -155,7 +158,7 @@ async function replaceMeldCard(game){
     while (meldIndex==-1){
         meldIndex = await getInput('Choose the target meld: ', input => {
             input = parseInt(input);
-            if (isNaN(input) || input>gameInfo.tableMelds[meldOwnerIndex].length || input<0){
+            if (isNaN(input) || input<0 || !gameInfo.tableMelds[meldOwnerIndex][input]){
                 console.log('Invalid index. Try again.');
                 return -1;
             }
@@ -167,7 +170,7 @@ async function replaceMeldCard(game){
     while (replacedCardIndex==-1){
         replacedCardIndex = await getInput(`Input index of the target card in the meld: `, input => {
             input = parseInt(input);
-            if (isNaN(input) || input.gameInfo.tableMelds[meldOwnerIndex][meldIndex].length || input<0){
+            if (isNaN(input) || input<0 || !gameInfo.tableMelds[meldOwnerIndex][meldIndex].cards[input] ){
                 console.log('Invalid index. Try again.');
                 return -1;
             }
@@ -177,10 +180,10 @@ async function replaceMeldCard(game){
     
     if (game.replaceMeldCard(cardIndex, meldOwnerIndex, meldIndex, replacedCardIndex)){
         console.log('Successfully added!');
-        printGameInfo();
+        printGameInfo(game);
     }  
     else{
-        console.log('Invalid addition to a meld.');
+        console.log('Invalid replacement.');
     }
 }
 

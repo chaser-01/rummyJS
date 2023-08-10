@@ -9,7 +9,7 @@ async function main(){
     //get options and create game
     let players, options;
     [players, options] = await getOptions();
-    let playerIds = Array.from(Array(players), (_, index) => index+1);
+    let playerIds = Array.from(Array(players), (_, index) => index);
     let game = new Game(playerIds, options);
 
     console.log(`
