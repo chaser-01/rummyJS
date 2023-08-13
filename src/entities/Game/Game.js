@@ -1,4 +1,5 @@
 //necessary objects
+import { gameStatusEnum } from "./GameStatus.js";
 import { GameScore } from "./GameScore.js";
 import { Logger } from "../Logger/Logger.js";
 import { Player } from "../Player/Player.js";
@@ -9,7 +10,7 @@ import { Meld } from "../Meld/Meld.js";
 //some auxiliary functions
 import { loadConfigFile } from "./auxiliary/loadConfig.js";
 import { setCardsToDealAndNumberOfDecks, setCardsToDraw, setCardsToDrawDiscardPile, setJokerOption, setWildcardOption } from "./auxiliary/setGameOptions.js";
-import { isMeld } from "../Meld/isMeld.js"; 
+import { validateAndSortMeld } from "../Meld/validateAndSortMeld.js"; 
 
 //path functions, for getting config file regardless of variant location
 import * as path from 'path';
@@ -32,13 +33,7 @@ export class Game {
      * The game/player actions that can be taken at any point of time are determined by the current status.
      * It is assigned to the 'gameStatus' property.
      */
-    GameStatus = Object.freeze({
-        PLAYER_TO_DRAW: Symbol('PLAYER_TO_DRAW'),
-        PLAYER_TURN: Symbol('PLAYER_TURN'),
-        PLAYER_TURN_ENDED: Symbol('PLAYER_TURN_ENDED'),
-        ROUND_ENDED: Symbol('ROUND_ENDED'),
-        END_GAME: Symbol('END_GAME')
-      });
+    GameStatus = gameStatusEnum;
 
 
     /**
@@ -196,6 +191,8 @@ export class Game {
      * @returns {boolean} - Whether game state is valid
      */
     validateGameState(){
+        if (!this.checkGameEnded() && !this.checkRoundEnded()) return false;
+
         //get deck and discard pile cards
         let checkCards = [];
         checkCards.push(...this.deck.getCards());
@@ -205,7 +202,7 @@ export class Game {
         for (const player of this.players){
             checkCards.push(...player.hand);
             for (const meld of player.melds){
-                if (meld.cards && meld.isComplete(undefined, this.jokerNumber)) checkCards.push(...meld.cards);
+                if (meld.cards && meld.checkAndSortMeld()) checkCards.push(...meld.cards);
                 else { 
                     console.log(`fuck ${meld}`)
                     this.logger.logWarning('validateGameState', undefined, undefined, `Player ${player.id} has invalid meld: ${meld.cards}`);
@@ -237,36 +234,34 @@ export class Game {
 
 
     /**
-     * @modifies {}
+     * Checks if the round has ended.
+     * Normally only occurs when the current (playing) player runs out their hand, but variants may have different conditions.
+     * @modifies {gameStatus}
      * @modifies {logger} 
      * @returns {boolean}
      */
-
-    //TO DO
     checkRoundEnded(){
-        if (!this.players[this.currentPlayerIndex].hand && this.players[this.currentPlayerIndex].playing){
+        if (this.players[this.currentPlayerIndex].hand==[] && this.players[this.currentPlayerIndex].playing){
+            this.setGameStatus(this.GameStatus.ROUND_ENDED);
             this.logger.logGameAction(
                 'checkRoundEnded', 
                 undefined, 
                 undefined, 
                 `Current player ${this.players[this.currentPlayerIndex].hand.id} has finished hand. Ending round`
                 )
-            this.score.evaluateRoundScore();
-            this.game
             return false;
         }
         return true;
     }
     
-
     
     /**
-     * Checks that the game has ended (should only be if 1 player is left?)
-     * @modifies {gameStatus} - Sets to END_GAME if game can't continue
+     * Checks if the game has ended.
+     * Normally only occurs if <=1 player is left playing, but variants may have different conditions.
+     * @modifies {gameStatus}
      * @modifies {logger}
      * @returns {boolean}
      */
-
     //TO DO: OR the wildcard has run through entire deck? OR hit some limit on number of rounds? we'll see
     checkGameEnded(){
         let still_playing=0;
@@ -317,10 +312,11 @@ export class Game {
     nextRound(){
         if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.ROUND_ENDED)) return false;
 
-        this.currentRound++;
-
         //calculate the round score
-        this.score.evaluateRoundScore();
+        if (this.currentRound!=0) this.score.evaluateRoundScore();
+
+        //increment round
+        this.currentRound++;
 
         //moves just-quit players to quitPlayers, and just-unquit players to players
         for (const [index, player] of this.players.entries()){
@@ -578,7 +574,7 @@ export class Game {
         }
 
         //if meld is valid, create the Meld object and add it to player's melds; else, reset the player's hand
-        if (isMeld(meldCards, this.jokerNumber)){
+        if (validateAndSortMeld(meldCards, this.jokerNumber)){
             let newMeld = new Meld(meldCards, this.jokerNumber);
             this.players[this.currentPlayerIndex].addMeld(newMeld);
             this.logger.logGameAction('createMeld', this.players[this.currentPlayerIndex].id, {indexArray});

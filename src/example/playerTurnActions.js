@@ -2,7 +2,10 @@ import { getInput } from "./auxiliary/getInput.js";
 import { printGameInfo } from "./auxiliary/printGameInfo.js";
 
 
-//sort the player's hand, either by suit or number
+/**
+ * Lets player choose between sorting by suit or number
+ * @param {Game} game 
+ */
 async function sortPlayerHand(game){
     await getInput(
         `Sort by: 
@@ -23,7 +26,10 @@ async function sortPlayerHand(game){
 }
 
 
-//specify some card indexes to create a meld out of the player's hand
+/**
+ * Let player choose some cards in their hand to make a meld
+ * @param {Game} game 
+ */
 async function createMeld(game){
     let cardIndex=0;
     let indexArray = [];
@@ -61,7 +67,11 @@ async function createMeld(game){
 }
 
 
-//add a specified card to a specified meld
+/**
+ * Lets player choose a hand card and a meld to add it to.
+ * @param {Game} game 
+ * @returns 
+ */
 async function addToMeld(game){
     let gameInfo = game.getGameInfoForPlayer();
     if (!gameInfo.tableMelds){
@@ -69,7 +79,7 @@ async function addToMeld(game){
         return;
     }
 
-    console.log(`Table melds:${Object.keys(gameInfo.tableMelds).map(player => ` ${player}: ${gameInfo.tableMelds[player]}`)}`);
+    console.log(`Table melds:${Object.keys(gameInfo.tableMelds).map(player => `\n${player}: ${gameInfo.tableMelds[player].map(meld => `[${meld}]`)}`)}`);
 
     let cardIndex=-1;
     while (cardIndex==-1){
@@ -112,7 +122,7 @@ async function addToMeld(game){
     
     if (game.addToMeld(cardIndex, meldOwnerIndex, meldIndex)){
         console.log('Successfully added!');
-        printGameInfo();
+        printGameInfo(game);
     }  
     else{
         console.log('Invalid addition to a meld.');
@@ -120,7 +130,11 @@ async function addToMeld(game){
 }
 
 
-//replace a card (should be joker) with a specified card in player's hand
+/**
+ * Lets player replace a chosen card in a chosen meld, with a chosen card in their hand
+ * @param {Game} game 
+ * @returns 
+ */
 async function replaceMeldCard(game){
     let gameInfo = game.getGameInfoForPlayer();
     if (!gameInfo.tableMelds){
@@ -141,6 +155,7 @@ async function replaceMeldCard(game){
             return input;
         });
     }
+    console.log(`Chosen card: ${gameInfo.currentPlayer.hand[cardIndex]}`);
 
     let meldOwnerIndex=-1;
     while (meldOwnerIndex==-1){
@@ -153,6 +168,7 @@ async function replaceMeldCard(game){
             return input;
         });
     }
+    console.log(`Chosen player: ${meldOwnerIndex}`);
 
     let meldIndex=-1;
     while (meldIndex==-1){
@@ -165,6 +181,7 @@ async function replaceMeldCard(game){
             return input;
         })
     }
+    console.log(`Chosen meld: ${gameInfo.tableMelds[meldOwnerIndex][meldIndex]}`);
 
     let replacedCardIndex=-1;
     while (replacedCardIndex==-1){
@@ -177,9 +194,10 @@ async function replaceMeldCard(game){
             return input;
         })
     }
-    
+    console.log(`Chosen card: ${gameInfo.tableMelds[meldOwnerIndex][meldIndex].cards[replacedCardIndex]}`);
+
     if (game.replaceMeldCard(cardIndex, meldOwnerIndex, meldIndex, replacedCardIndex)){
-        console.log('Successfully added!');
+        console.log('Successfully replaced!');
         printGameInfo(game);
     }  
     else{
@@ -188,7 +206,10 @@ async function replaceMeldCard(game){
 }
 
 
-//discard a specified card and end turn
+/**
+ * Lets player choose a card to discard and end their turn
+ * @param {Game} game 
+ */
 async function endTurn(game){
     let cardIndex = -1;
     while (cardIndex==-1){
@@ -208,10 +229,12 @@ async function endTurn(game){
 }
 
 
-//quits current player
+/**
+ * Lets a player quit the game
+ * @param {Game} game 
+ */
 async function quitPlayer(game){
     game.quitPlayer();
-    return;
 }
 
 export { sortPlayerHand, createMeld, addToMeld, replaceMeldCard, endTurn, quitPlayer };
