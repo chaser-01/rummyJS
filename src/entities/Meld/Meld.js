@@ -10,7 +10,7 @@ export class Meld {
      * Creates a Meld.
      * @constructor
      * @param {Card[]} cards
-     * @param {string} jokerNumber - optional joker number, so that it needn't be passed in again later on
+     * @param {string} jokerNumber - optional joker number, which can replace any card in a meld
      * @param {int} maxSetSize - optional max size of a set; defaults to 4 as per common rules
      */
     constructor(cards, jokerNumber=0, maxSetSize=4){
