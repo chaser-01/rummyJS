@@ -144,7 +144,7 @@ export class Game {
 
     /**
      * Initializes deck, joker (printed or wildcard, depending on game configuration), and a copy of the deck for validation later.
-     * @returns {int, int, Card[]} 
+     * @returns {[int, int, Card[]]} 
      */
     initializeDeckJokerAndValidationCards(){
         let deck = new PokerDeck(this.numberOfDecks, this.useJoker);
@@ -191,7 +191,7 @@ export class Game {
      * @returns {boolean} - Whether game state is valid
      */
     validateGameState(){
-        if (!this.checkGameEnded() && !this.checkRoundEnded()) return false;
+        if (!this.checkGameEnded() || !this.checkRoundEnded()) return false;
 
         //get deck and discard pile cards
         let checkCards = [];
@@ -204,7 +204,6 @@ export class Game {
             for (const meld of player.melds){
                 if (meld.cards && meld.checkAndSortMeld()) checkCards.push(...meld.cards);
                 else { 
-                    console.log(`fuck ${meld}`)
                     this.logger.logWarning('validateGameState', undefined, undefined, `Player ${player.id} has invalid meld: ${meld.cards}`);
                     this.setGameStatus(this.GameStatus.END_GAME);
                     return false;
@@ -215,10 +214,6 @@ export class Game {
         //sort checkCards and compare with validationCards (as strings, since they don't reference the same card objects)
         checkCards.sort(Card.compareCardsSuitFirst);    
         if (JSON.stringify(checkCards) != JSON.stringify(this.validationCards)){
-            let checkCardsStr = checkCards.map(card => ` ${card}`);
-            let validationCardsStr = this.validationCards.map(card => ` ${card}`); 
-            console.log(`checkCards: \n ${checkCardsStr} \n validationCards: \n ${validationCardsStr}`)
-
             this.logger.logWarning('validateGameState', undefined, undefined, 'Invalid game state'); 
             this.setGameStatus(this.GameStatus.END_GAME);
             return false;

@@ -73,6 +73,7 @@ export class Card {
      * @returns {string}
      */
     toString(){
+        if (this.number=='Joker') return 'Joker';
         return `${suitsText[this.suit]}${this.number}`;
     }
 }
