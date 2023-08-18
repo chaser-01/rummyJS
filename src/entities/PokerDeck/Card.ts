@@ -17,9 +17,9 @@ export class Card {
 
     /**
      * Returns the value of a card's number only (typically for Rummy score calculation).
-     * @returns {int}
+     * @returns {number}
      */
-    cardNumberValue(){
+    cardNumberValue(): number{
         let [, numberValue] = suitNumberValue(this.suit, this.number);
         return numberValue;
     }
@@ -27,9 +27,9 @@ export class Card {
 
     /**
      * Returns the value of a card, prioritising suit THEN number.
-     * @returns {int}
+     * @returns {inumbernt}
      */
-    cardValueSuitFirst(){
+    cardValueSuitFirst(): number{
         let suitValue, numberValue;
         [suitValue, numberValue] = suitNumberValue(this.suit, this.number);
         return suitValue*100 + numberValue;
@@ -39,18 +39,18 @@ export class Card {
      * Used as callback function for sorting an array of cards, prioriting suit.
      * @param {Card} a 
      * @param {Card} b 
-     * @returns {int}
+     * @returns {number}
      */
-    static compareCardsSuitFirst(a: Card, b: Card) {
+    static compareCardsSuitFirst(a: Card, b: Card): number{
         return a.cardValueSuitFirst() - b.cardValueSuitFirst();
     }
 
 
     /**
      * Returns the value of a card, prioritising number THEN suit.
-     * @returns {int}
+     * @returns {number}
      */
-    cardValueNumberFirst(){
+    cardValueNumberFirst(): number{
         let suitValue, numberValue;
         [suitValue, numberValue] = suitNumberValue(this.suit, this.number);
         return numberValue*100 + suitValue;
@@ -60,9 +60,9 @@ export class Card {
      * Used as a callback function for sorting an array of cards, prioritising number (more commonly used).
      * @param {Card} a 
      * @param {Card} b 
-     * @returns {int}
+     * @returns {number}
      */
-    static compareCardsNumberFirst(a, b) {
+    static compareCardsNumberFirst(a: Card, b: Card): number{
         return a.cardValueNumberFirst() - b.cardValueNumberFirst();
     }
 
@@ -72,7 +72,7 @@ export class Card {
      * @override
      * @returns {string}
      */
-    toString(){
+    toString(): string{
         if (this.number=='Joker') return 'Joker';
         return `${suitsText[this.suit]}${this.number}`;
     }
