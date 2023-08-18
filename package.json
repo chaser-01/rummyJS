@@ -1,5 +1,9 @@
 {
   "type": "module",
   "name": "rummyjs",
-  "version": "1.0.0"
+  "version": "1.0.0",
+  "devDependencies": {
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.1.6"
+  }
 }
