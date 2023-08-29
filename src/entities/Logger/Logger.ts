@@ -3,8 +3,8 @@ import { Game } from '../Game/Game';
 type LogObject = {
     functionName: string,
     playerId: string|number,
-    args: any,
-    notes: string|undefined
+    args: {[argName: string]: string},
+    notes: string
 }
 
 type Log = {
@@ -44,21 +44,15 @@ export class Logger{
 
 
     /** Logs a game warning/error. */
-    logWarning(functionName, playerId='GAME', args=undefined, notes=undefined){
+    logWarning(functionName: string, playerId: string='GAME', args: {[argName: string]: string}={}, notes=''){
         let logObject: LogObject = {functionName, playerId, args, notes};
         this.warningLog[this.game.currentRound].push(logObject);
     }
 
 
     /** Logs a game action. */
-    logGameAction(functionName, playerId='GAME', args=undefined, notes=undefined){
-        let logObject = {};
-
-        logObject.functionName = functionName;
-        logObject.playerId = playerId;
-        if (args) logObject.args = args;
-        if (notes) logObject.notes = notes;
-
+    logGameAction(functionName: string, playerId: string='GAME', args: {[argName: string]: string}={}, notes=''){
+        let logObject: LogObject = {functionName, playerId, args, notes};
         this.actionLog[this.game.currentRound].push(logObject);
     }   
 

@@ -56,7 +56,7 @@ export class Game {
     protected initialOptions: GameOptions|undefined;
     protected score: GameScore;
 
-    //Used for game tracking, public for 
+    //Used for game tracking, public for useability
     currentPlayerIndex: number;
     currentRound: number;
     gameStatus: keyof typeof GameStatus.GameStatus;
@@ -125,7 +125,7 @@ export class Game {
 
 
     /** Initializes options that determine some customizable game-specific stuff. */
-    initializeOptions(options: GameOptions|undefined): (keyof typeof GameOptions)[]{
+    initializeOptions(options: GameOptions): any[]{
         let useWildcard = setWildcardOption(this.config, options.useWildcard);
         let useJoker = setJokerOption(this.config, options.useJoker);
         let cardsToDraw = setCardsToDraw(this.config, options.cardsToDraw);
@@ -144,12 +144,8 @@ export class Game {
     }
 
 
-    /**
-     * Initializes an array of player objects
-     * @param {int[]} playerIds
-     * @returns {Player[]}
-     */
-    initializePlayers(playerIds){
+    /** Initializes an array of player objects */
+    initializePlayers(playerIds: string[]){
         let players = [];
         for (const playerId of playerIds){
             players.push(new Player(this, playerId));
@@ -164,21 +160,18 @@ export class Game {
     }
 
 
-    /**
-     * Initializes deck, joker (printed or wildcard, depending on game configuration), and a copy of the deck for validation later.
-     * @returns {[int, int, Card[]]} 
-     */
-    initializeDeckJokerAndValidationCards(){
+    /** Initializes deck, joker (printed/wildcard/none, depending on game configuration), and a copy of the deck for validation later. */
+    initializeDeckJokerAndValidationCards(): [PokerDeck, string|false, Card[]]{
         let deck = new PokerDeck(this.numberOfDecks, this.useJoker);
-        let validationCards = deck._stack.slice().sort(Card.compareCardsSuitFirst);
+        let validationCards = deck.getCards().slice().sort(Card.compareCardsSuitFirst);
         deck.shuffle();
         
-        //set joker either to printed joker ('Joker') or wildcard, or nothing.
+        //set joker either to printed joker ('Joker') or wildcard, or false (nothing).
         //wildcard number is (currentRound+1)%(size of deck numbers)
-        let jokerNumber;
+        let jokerNumber: string|false;
         if (this.useJoker) jokerNumber = 'Joker';
         else if (this.useWildcard) jokerNumber = this.getWildcardNumber(deck);
-        else jokerNumber = undefined;
+        else jokerNumber = false;
 
         return [deck, jokerNumber, validationCards];
     }
@@ -188,10 +181,8 @@ export class Game {
      * Get the current wildcard number if wildcards are enabled, upon start of each round.
      * Variants may handle wildcards differently, so overriding this method may be useful.
      * Currently, wildcard starts at 2 and increments on each round.
-     * @modifies {jokerNumber}
-     * @returns {string | boolean}
      */
-    getWildcardNumber(deck){
+    getWildcardNumber(deck: PokerDeck){
         if (this.useWildcard){
             return deck.numbers[this.currentRound+1 % Object.keys(deck.numbers).length];
         }
@@ -206,17 +197,13 @@ export class Game {
 
 
 
-    /**
-     * Validates that the cards in play tally with validationCards, and all melds are valid.
-     * @modifies {gameStatus} - sets to END_GAME if game state is invalid
-     * @modifies {logger} - Logs ending of game if game state is invalid
-     * @returns {boolean} - Whether game state is valid
+    /** Validates that the cards in play tally with validationCards, and all melds are valid.
      */
     validateGameState(){
         if (!this.checkGameEnded() || !this.checkRoundEnded()) return false;
 
         //get deck and discard pile cards
-        let checkCards = [];
+        let checkCards: Card[] = [];
         checkCards.push(...this.deck.getCards());
         checkCards.push(...this.deck.getDiscardPile());
 
@@ -244,7 +231,7 @@ export class Game {
     }
 
     //Simply checks that the current gameStatus is correct
-    validateGameStatus(intendedGameStatus){
+    validateGameStatus(intendedGameStatus: keyof typeof this.GameStatus){
         if (intendedGameStatus !== this.gameStatus) return false;
         return true;
     }
@@ -253,12 +240,9 @@ export class Game {
     /**
      * Checks if the round has ended.
      * Normally only occurs when the current (playing) player runs out their hand, but variants may have different conditions.
-     * @modifies {gameStatus}
-     * @modifies {logger} 
-     * @returns {boolean}
      */
     checkRoundEnded(){
-        if (this.players[this.currentPlayerIndex].hand==[] && this.players[this.currentPlayerIndex].playing){
+        if (this.players[this.currentPlayerIndex].hand.length==0 && this.players[this.currentPlayerIndex].playing){
             this.setGameStatus(this.GameStatus.ROUND_ENDED);
             this.logger.logGameAction(
                 'checkRoundEnded', 
@@ -275,11 +259,9 @@ export class Game {
     /**
      * Checks if the game has ended.
      * Normally only occurs if <=1 player is left playing, but variants may have different conditions.
-     * @modifies {gameStatus}
-     * @modifies {logger}
-     * @returns {boolean}
      */
-    //TO DO: OR the wildcard has run through entire deck? OR hit some limit on number of rounds? we'll see
+
+    //TO DO: Possible other game-end conditions: Wildcard has done 2 to Ace, or hit some defined max round limit?
     checkGameEnded(){
         let still_playing=0;
         for (const player of this.players){
@@ -302,14 +284,8 @@ export class Game {
     
 
 
-    /**
-     * Verifies that the input is a GameStatus, and sets it
-     * @modifies {gameStatus} - Sets to the input gameStatus
-     * @param {GameStatus} gameStatus 
-     * @returns {boolean}
-     */
-    setGameStatus(gameStatus){
-        if (!Object.keys(this.GameStatus).find(status => status = gameStatus)) return false;
+    /** Setter for gameStatus. */
+    setGameStatus(gameStatus: keyof typeof this.GameStatus){
         this.gameStatus = gameStatus;
         return true;
     }
@@ -317,14 +293,7 @@ export class Game {
 
     
     /** 
-     * Does some things (explained below) to start the next round.
-     * @modifies {currentRound}
-     * @modifies {score}
-     * @modifies {players, quitPlayers}
-     * @modifies {useWildcard, useJoker, cardsToDraw, cardsToDrawDiscardPile, cardsToDeal, numberOfDecks}
-     * @modifies {gameStatus}
-     * @modifies {logger}
-     * @returns {boolean}
+     * Does some things necessary housekeeping to initiate next round.
      */
     nextRound(){
         if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.ROUND_ENDED)) return false;
@@ -342,9 +311,6 @@ export class Game {
         for (const [index, player] of this.quitPlayers.entries()){
             if (player.playing) this.players.push(...this.quitPlayers.splice(index, 1));
         }
-
-        //create next round in score object
-        this.score.initializeRound();
         
         //set game config again (particularly cardsToDeal, if number of players changed)
         this.initializeOptions(this.initialOptions);
