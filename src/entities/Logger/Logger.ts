@@ -29,7 +29,7 @@ export class Logger{
      * Creates a Logger.
      * @constructor
      */
-    constructor(game){
+    constructor(game: Game){
         this.game = game;
         this.actionLog = {};
         this.warningLog = {};

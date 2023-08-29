@@ -17,6 +17,15 @@ import * as path from 'path';
 import { fileURLToPath } from 'url';
 
 
+interface GameOptions {
+    useWildCard: boolean,
+    useJoker: boolean,
+    cardsToDraw: number,
+    cardsToDrawDiscardPile: number|"all",
+    cardsToDeal: number,
+    numberOfDecks: number
+}
+
 
 
 /** Represents a game of Rummy. */
@@ -25,9 +34,38 @@ export class Game {
 
 
     /** The variant title; used for accessing the variant's config file too. */
-    static title = "Rummy"; 
+    readonly title = "Rummy"; 
     /** An enum of possible game statuses. */
     GameStatus = GameStatus.GameStatus;
+    /** Default configuration for the variant. */
+    protected config: any;
+
+    /** An optional ID for identifying a game. */
+    readonly gameId: string;
+    /** Used for logging game actions/warnings. */
+    protected logger: Logger;
+    /** Players who are currently playing, or quit during the current round. */
+    protected players: Player[];
+    /** Players who have played in this game, but quit before the current round. */
+    protected quitPlayers: Player[];
+    /** Options that were initially passed into the Game. */
+    protected initialOptions: GameOptions|undefined;
+    /** Used for tracking the game scores. */
+    protected score: GameScore;
+
+    /** Current player. */
+    protected currentPlayerIndex: number;
+    /** Current round. */
+    protected currentRound: number;
+    /** Current game status. */
+    protected gameStatus: keyof typeof GameStatus.GameStatus;
+
+    /** The game deck (and discard pile). */
+    protected deck: PokerDeck;
+    /** The joker number (can be wildcard, 'Joker', or nothing). */
+    protected jokerNumber: keyof typeof this.deck.numbers|undefined;
+    /** A copy of the initial deck, for gamestate validation. */
+    protected validationCards: Card[];
 
 
     /// Methods ///
@@ -37,8 +75,8 @@ export class Game {
      * Creates a Game.
      * Don't override this in variants as it may mess with initialization flow; instead override individual functions as required.                    
      */
-    constructor(playerIds, options={}, gameId=undefined){
-        if (gameId) this.gameId = gameId;
+    constructor(playerIds: string[], options: GameOptions|undefined=undefined, gameId: string=''){
+        this.gameId = gameId;
 
         this.config = this.loadConfig();
         this.logger = new Logger(this);
@@ -56,6 +94,12 @@ export class Game {
 
         [this.deck, this.jokerNumber, this.validationCards] = this.initializeDeckJokerAndValidationCards();
     }
+
+
+
+    ////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////// Getters/setters /////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
 
 
 

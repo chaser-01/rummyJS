@@ -11,7 +11,7 @@ export class Player{
     /** Game that this player belongs to. */
     game: Game;
     /** Unique ID of the player. */
-    id: string|number;
+    id: string;
     /** The player's hand. */
     hand: Card[];
     /** The player's melds. */
@@ -24,7 +24,7 @@ export class Player{
 
 
     /** Creates a Player. */
-    constructor(game: Game, id: string|number){
+    constructor(game: Game, id: string){
         this.game = game;
         this.id = id;
         this.hand = [];
