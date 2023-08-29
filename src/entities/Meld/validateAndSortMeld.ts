@@ -1,16 +1,12 @@
-import { Card } from "../PokerDeck/Card.js";
+import { Card } from "../PokerDeck/Card";
+import { numbers } from "../PokerDeck/suitsNumbers";
 
-//Auxiliary functions for checking and sorting a meld. These are used in the Meld class
+
+//Auxiliary functions for checking and sorting a meld. These are mostly used in the Meld class.
 
 
-/**
- * Validates an array of cards as a meld, and sorts the cards into the valid meld in-place.
- * @param {Card[]} cards 
- * @param {string} jokerNumber - Optional joker that can replace any card in the meld
- * @param {int} maxSetSize - Optional max limit for the size of a set; defaults to 4
- * @returns 
- */
-export function validateAndSortMeld(cards, jokerNumber=0, maxSetSize=4) {
+/** Validates an array of cards as a meld, and sorts the cards into the valid meld in-place. */
+export function validateAndSortMeld(cards: Card[], jokerNumber: (keyof typeof numbers|0)=0, maxSetSize: number=4) {
   if (Array.isArray(cards) && cards.length>=3 && (isValidSequence(cards, jokerNumber) || isValidSet(cards, jokerNumber, maxSetSize))) {
     return true;
   } else {
@@ -22,12 +18,9 @@ export function validateAndSortMeld(cards, jokerNumber=0, maxSetSize=4) {
 
 /**
  * Checks if an array of cards forms a valid sequence, ie adjacent numbers and same suits.
- * If valid, sorts the array to form the sequence.
- * @param {Card[]} cards 
- * @param {string} jokerNumber 
- * @returns {boolean}
+ * If valid, sorts the array to form the sequence before returning.
  */
-function isValidSequence(cards, jokerNumber=0) {
+function isValidSequence(cards: Card[], jokerNumber: (keyof typeof numbers|0)=0) {
   //filter out jokers and sort the cards
   let jokers = [];
   let jokerlessCards = cards;
@@ -38,18 +31,22 @@ function isValidSequence(cards, jokerNumber=0) {
   let isValid = true;
   let sortedOffset = 0;
   
-  //check adjacent cards for same suit and adjacent number; while not the case, slot in a joker
-  for (let i=0; i<jokerlessCards.length; i++){
+  /*
+  Check adjacent cards for same suit and adjacent number; while not the case, slot in a joker.
+  Whenever we slot in a joker, increment sortedOffset and use it to offset i in the future,
+  so that we aren't checking inserted jokers.
+  */
+  for (let i=0; i+sortedOffset<sortedCards.length; i++){
     if (i==0) continue;
 
-    const currentCardValue = jokerlessCards[i].cardValueSuitFirst();
-    const prevCardValue = jokerlessCards[i-1].cardValueSuitFirst();
+    const currentCardValue = jokerlessCards[i+sortedOffset].cardValueSuitFirst();
+    const prevCardValue = jokerlessCards[i+sortedOffset-1].cardValueSuitFirst();
     let difference = currentCardValue - prevCardValue;
 
     //when we slot in a joker, offset the index in sortedCards by +1
     while (difference>1 && jokers.length>0){
       difference--;
-      sortedCards.splice(i+sortedOffset, 0, jokers.splice(0, 1));
+      sortedCards.splice(i+sortedOffset, 0, jokers.splice(0, 1)[0]);
       sortedOffset++;
     }
 
@@ -60,7 +57,7 @@ function isValidSequence(cards, jokerNumber=0) {
     }
   }
 
-  //if its a valid sequence, replace the cards with sorted cards
+  //if its a valid sequence, replace the cards with sortedCards
   if (isValid) cards = sortedCards;
   return isValid;
 }
@@ -68,13 +65,9 @@ function isValidSequence(cards, jokerNumber=0) {
 
 /**
  * Checks if an array of cards forms a valid set, ie all same numbers.
- * If valid, sorts the array to form the set.
- * @param {Card[]} cards 
- * @param {string} jokerNumber 
- * @param {int} maxSetSize 
- * @returns {boolean}
+ * If valid, sorts the array to form the set before returning.
  */
-function isValidSet(cards, jokerNumber=0, maxSetSize=4) {
+function isValidSet(cards: Card[], jokerNumber: (keyof typeof numbers|0)=0, maxSetSize: number=4) {
   //filter out jokers and sort the cards
   let jokers = [];
   let jokerlessCards = cards;
@@ -96,9 +89,8 @@ function isValidSet(cards, jokerNumber=0, maxSetSize=4) {
 }
 
 
-
 //Filters and counts jokers from an input array of cards, and returns joker count + filtered cards
-function filterJokers(cards, jokerNumber=this.jokerNumber){
+function filterJokers(cards: Card[], jokerNumber: (keyof typeof numbers|0)=0){
   let jokers=[];
   let jokerlessCards = [];
 

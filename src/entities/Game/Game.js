@@ -1,5 +1,5 @@
 //necessary objects
-import { gameStatusEnum } from "./GameStatus.js";
+import * as GameStatus from "./GameStatus.js";
 import { GameScore } from "./GameScore.js";
 import { Logger } from "../Logger/Logger.js";
 import { Player } from "../Player/Player.js";
@@ -19,43 +19,23 @@ import { fileURLToPath } from 'url';
 
 
 
-/**
- * Represents a game of Rummy.
- */
+/** Represents a game of Rummy. */
 export class Game {
-    //variant title; also used for loading the correct variant config file
-    title = "Rummy"; 
+    /// Properties ///
 
 
-    /**
-     * @constant
-     * An "enum" that represents statuses the game can take.
-     * The game/player actions that can be taken at any point of time are determined by the current status.
-     * It is assigned to the 'gameStatus' property.
-     */
-    GameStatus = gameStatusEnum;
+    /** The variant title; used for accessing the variant's config file too. */
+    static title = "Rummy"; 
+    /** An enum of possible game statuses. */
+    GameStatus = GameStatus.GameStatus;
+
+
+    /// Methods ///
 
 
     /**
      * Creates a Game.
-     * Don't override this in variants as it may mess with initialization flow; instead override individual functions as required.
-     * @constructor
-     * @property {string} gameId                        - Optional, for uniquely identifying a game
-     * @property {Object} config                        - The game's config file
-     * @property {Logger} logger                        - Used for logging game/player actions
-     * @property {Player[]} players                     - Array of player objects
-     * @property {Player[]} quitPlayers                 - Array of players who have quit
-     * @property {GameOptions} initialOptions           - Stores the options that were passed into constructor
-     * @property {GameScore} score                      - Tracks/evaluates player scores
-     * @property {int} currentPlayerIndex               - Tracks the current player
-     * @property {int} currentRound                     - Tracks the current round
-     * @property {GameStatus} gameStatus                - Tracks the current game status (and what actions can be taken)
-     * @property {PokerDeck} deck                       - The game deck
-     * @property {string} jokerNumber                   - The joker (can be printed, or a wildcard)
-     * @property {Card[]} validationCards               - A copy of the deck cards, for validation later on
-     * @param {int[]} playerIds                             
-     * @param {GameOption} options                          
-     * @param {int} gameId                                  
+     * Don't override this in variants as it may mess with initialization flow; instead override individual functions as required.                    
      */
     constructor(playerIds, options={}, gameId=undefined){
         if (gameId) this.gameId = gameId;

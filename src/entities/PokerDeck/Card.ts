@@ -1,23 +1,31 @@
-import { suitNumberValue, suitsText } from './suitsNumbers.js';
+import { suits, numbers, suitNumberValue, suitsText } from './suitsNumbers';
 
-/**
- * Represents a poker card.
- */
+/** Represents a poker card. */
 export class Card {
+    /// Properties ///
+
+    
+    /** The card's suit (must correspond to one in suits). */
+    suit: keyof typeof suits;
+    /** The card's number (must correspond to one in numbers). */
+    number: keyof typeof numbers;
+
+
+    /// Methods ///
+
+
     /**
      * Creates a Card.
      * @constructor
-     * @param {string} suit - A suit (must be a value from suitNumbers' suits object)
-     * @param {string} number - A number (must be a value from suitsNumbers' numbers object)
      */
-    constructor(suit: string, number: string) {
+    constructor(suit: keyof typeof suits, number: keyof typeof numbers) {
         this.suit = suit;
         this.number = number;
     }
 
+
     /**
      * Returns the value of a card's number only (typically for Rummy score calculation).
-     * @returns {number}
      */
     cardNumberValue(): number{
         let [, numberValue] = suitNumberValue(this.suit, this.number);
@@ -25,52 +33,36 @@ export class Card {
     }
 
 
-    /**
-     * Returns the value of a card, prioritising suit THEN number.
-     * @returns {inumbernt}
-     */
+    /**  Returns the value of a card, prioritising suit THEN number. */
     cardValueSuitFirst(): number{
         let suitValue, numberValue;
         [suitValue, numberValue] = suitNumberValue(this.suit, this.number);
         return suitValue*100 + numberValue;
     }
 
-    /**
-     * Used as callback function for sorting an array of cards, prioriting suit.
-     * @param {Card} a 
-     * @param {Card} b 
-     * @returns {number}
-     */
+
+    /** Used as callback function for sorting an array of cards, prioriting suit. */
     static compareCardsSuitFirst(a: Card, b: Card): number{
         return a.cardValueSuitFirst() - b.cardValueSuitFirst();
     }
 
 
-    /**
-     * Returns the value of a card, prioritising number THEN suit.
-     * @returns {number}
-     */
+    /** Returns the value of a card, prioritising number THEN suit. */
     cardValueNumberFirst(): number{
         let suitValue, numberValue;
         [suitValue, numberValue] = suitNumberValue(this.suit, this.number);
         return numberValue*100 + suitValue;
     }
 
-    /**
-     * Used as a callback function for sorting an array of cards, prioritising number (more commonly used).
-     * @param {Card} a 
-     * @param {Card} b 
-     * @returns {number}
-     */
+    /**  Used as a callback function for sorting an array of cards, prioritising number (more commonly used). */
     static compareCardsNumberFirst(a: Card, b: Card): number{
         return a.cardValueNumberFirst() - b.cardValueNumberFirst();
     }
 
 
     /**
-     * Custom string representation of a card.
+     * Custom string representation for a card.
      * @override
-     * @returns {string}
      */
     toString(): string{
         if (this.number=='Joker') return 'Joker';

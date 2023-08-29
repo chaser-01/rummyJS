@@ -1,19 +1,27 @@
-import {validateAndSortMeld} from './validateAndSortMeld.js';
+import {validateAndSortMeld} from './validateAndSortMeld';
+import { Card } from '../PokerDeck/Card';
+import { numbers } from '../PokerDeck/suitsNumbers';
 
-
-/**
- * Represents a Rummy meld.
- * When created/modified, the meld is always (re)validated.
- */
+/** Represents a Rummy meld. */
 export class Meld {
+    /// Properties ///
+
+    /** The meld cards. */
+    cards: Card[];
+    /** The optional joker number; if present, must be a key in `numbers`. */
+    jokerNumber: keyof typeof numbers | 0;
+    /** The maximum size for a set. Rules dictate that this is by default 4. */
+    maxSetSize: number;
+
+
+    /// Methods ///
+
+
     /**
      * Creates a Meld.
      * @constructor
-     * @param {Card[]} cards
-     * @param {string} jokerNumber - optional joker number, which can replace any card in a meld
-     * @param {int} maxSetSize - optional max size of a set; defaults to 4 as per common rules
      */
-    constructor(cards, jokerNumber=0, maxSetSize=4){
+    constructor(cards, jokerNumber: (keyof typeof numbers|0) =0, maxSetSize=4){
         if (validateAndSortMeld(cards, jokerNumber, maxSetSize)){
             this.cards = cards;
         }
@@ -28,23 +36,17 @@ export class Meld {
     /**
      * Validates an array of cards and sorts them if they form a valid meld.
      * If no cards are passed in, operates on the instance's cards.
-     * @param {Card[]} cards
-     * @param {string} jokerNumber 
-     * @param {int} maxSetSize
-     * @returns {boolean}
      */
-    checkAndSortMeld(cards=this.cards, jokerNumber=this.jokerNumber, maxSetSize=this.maxSetSize){
+    checkAndSortMeld(
+        cards: Card[] =this.cards, 
+        jokerNumber: (keyof typeof numbers|0) =this.jokerNumber, 
+        maxSetSize: number =this.maxSetSize){
         return validateAndSortMeld(cards, jokerNumber, maxSetSize);
     }
 
 
-    /**
-     * Verifies that a card can be added to the meld, and still form a valid meld.
-     * @param {Card[]} newCard 
-     * @param {string} jokerNumber 
-     * @returns {boolean}
-     */
-    addCard(newCard){
+    /** Verifies that a card can be added to the meld, and still form a valid meld. */
+    addCard(newCard: Card[]){
         let modifiedCards = [...this.cards].concat(newCard);
         if (this.checkAndSortMeld(modifiedCards)){
             this.cards = this.cards.concat(newCard);
@@ -57,18 +59,15 @@ export class Meld {
     /**
      * Attempts to replace the specified card with a new card, and verify the meld's validity.
      * Returns the replaced card if successful, and false if not.
-     * @param {Card[]} newCard 
-     * @param {int} replacedIndex 
-     * @returns {Card|boolean}
      */
-    replaceCard(newCard, replacedIndex){
+    replaceCard(newCard: Card, replacedIndex: number): Card|false{
         if (this.cards[replacedIndex].number != this.jokerNumber) return false;
 
         let modifiedCards = [...this.cards];
         modifiedCards.splice(replacedIndex, 1, newCard);
 
         if (this.checkAndSortMeld(modifiedCards, this.jokerNumber, this.maxSetSize)){
-            let replacedCard = this.cards.splice(replacedIndex, 1, newCard);
+            let replacedCard = this.cards.splice(replacedIndex, 1, newCard)[0];
             return replacedCard;
         }
         return false;
@@ -78,14 +77,12 @@ export class Meld {
     /**
      * Attempts to replace the first possible joker with a new card, and verify the meld's validity.
      * Returns the replaced card if successful, and false if not.
-     * @param {*} newCard 
-     * @returns {Card|boolean}
      */
-   replaceAnyJoker(newCard){
+   replaceAnyJoker(newCard: Card): Card|false{
         for (let i=0; i<this.cards.length; i++){
-            if (this.cards[i].number == jokerNumber){
+            if (this.cards[i].number == this.jokerNumber){
                 if (this.checkAndSortMeld([...this.cards].splice(i, 1, newCard), this.jokerNumber, this.maxSetSize)){
-                    let replacedCard = this.cards.splice(i, 1, newCard);
+                    let replacedCard = this.cards.splice(i, 1, newCard)[0];
                     return replacedCard;
                 }
             }
@@ -98,7 +95,7 @@ export class Meld {
     * A string representation for the meld.
     * @override
     */
-   toString(){
+   toString(): string{
         return `${this.cards.map(card =>`${card}`)}`
    }
 }
