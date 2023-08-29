@@ -18,12 +18,12 @@ import { fileURLToPath } from 'url';
 
 
 interface GameOptions {
-    useWildCard: boolean,
-    useJoker: boolean,
-    cardsToDraw: number,
-    cardsToDrawDiscardPile: number|"all",
-    cardsToDeal: number,
-    numberOfDecks: number
+    useWildcard?: boolean,
+    useJoker?: boolean,
+    cardsToDraw?: number,
+    cardsToDrawDiscardPile?: number|"all",
+    cardsToDeal?: number,
+    numberOfDecks?: number
 }
 
 
@@ -40,40 +40,39 @@ export class Game {
     /** Default configuration for the variant. */
     protected config: any;
 
-    /** An optional ID for identifying a game. */
+    //Options that can be changed by passing in GameOptions in the constructor.
+    protected useWildcard: boolean;
+    protected useJoker: boolean;
+    protected cardsToDraw: number;
+    protected cardsToDrawDiscardPile: number|"all";
+    protected cardsToDeal: number;
+    protected numberOfDecks: number;
+
+    //Used for game tracking
     readonly gameId: string;
-    /** Used for logging game actions/warnings. */
     protected logger: Logger;
-    /** Players who are currently playing, or quit during the current round. */
     protected players: Player[];
-    /** Players who have played in this game, but quit before the current round. */
     protected quitPlayers: Player[];
-    /** Options that were initially passed into the Game. */
     protected initialOptions: GameOptions|undefined;
-    /** Used for tracking the game scores. */
     protected score: GameScore;
 
-    /** Current player. */
-    protected currentPlayerIndex: number;
-    /** Current round. */
-    protected currentRound: number;
-    /** Current game status. */
-    protected gameStatus: keyof typeof GameStatus.GameStatus;
+    //Used for game tracking, public for 
+    currentPlayerIndex: number;
+    currentRound: number;
+    gameStatus: keyof typeof GameStatus.GameStatus;
 
-    /** The game deck (and discard pile). */
+    //Game deck related
     protected deck: PokerDeck;
-    /** The joker number (can be wildcard, 'Joker', or nothing). */
     protected jokerNumber: keyof typeof this.deck.numbers|undefined;
-    /** A copy of the initial deck, for gamestate validation. */
     protected validationCards: Card[];
 
 
-    /// Methods ///
+    /// Methods ///     
 
 
     /**
      * Creates a Game.
-     * Don't override this in variants as it may mess with initialization flow; instead override individual functions as required.                    
+     * Don't override this in variants as it may mess with initialization flow; instead, override individual functions as required.                    
      */
     constructor(playerIds: string[], options: GameOptions|undefined=undefined, gameId: string=''){
         this.gameId = gameId;
@@ -85,9 +84,15 @@ export class Game {
         this.quitPlayers = [];
 
         this.initialOptions = options;
-        this.initializeOptions(this.initialOptions);
 
-        this.score = this.initializeScore(this);
+        [this.useWildcard,
+        this.useJoker,
+        this.cardsToDraw,
+        this.cardsToDrawDiscardPile,
+        this.cardsToDeal,
+        this.numberOfDecks] = this.initializeOptions(options ? options : {} as GameOptions);
+
+        this.score = this.initializeScore();
         this.currentPlayerIndex = 0;
         this.currentRound = 0;
         this.gameStatus = this.GameStatus.ROUND_ENDED;
@@ -111,7 +116,6 @@ export class Game {
     
     /**
      * Loads a json config file for the game (must be located in same directory, and named same as the class 'title' property)
-     * @returns {Object} - An object containing default configuration options
      */
     loadConfig(){
         const __filename = fileURLToPath(import.meta.url);
@@ -120,25 +124,23 @@ export class Game {
     }
 
 
-    /**
-     * Initializes options that determine some customizable, game-specific variables.
-     * Options are explained in the GameOptions documentation.
-     * @param {GameOptions} options - Optional options to configure the game
-     * @modifies {useWildcard}
-     * @modifies {useJoker} 
-     * @modifies {cardsToDraw}
-     * @modifies {cardsToDrawDiscardPile}
-     * @modifies {cardsToDeal}
-     * @modifies {numberOfDecks}
-     */
-    initializeOptions(options){
-        this.useWildcard = setWildcardOption(this.config, options.useWildcard);
-        this.useJoker = setJokerOption(this.config, options.useJoker);
-        this.cardsToDraw = setCardsToDraw(this.config, options.cardsToDraw);
-        this.cardsToDrawDiscardPile = setCardsToDrawDiscardPile(this.config, options.cardsToDrawDiscardPile);
-        [this.cardsToDeal, this.numberOfDecks] = setCardsToDealAndNumberOfDecks(this.config, this.players.length, options.cardsToDeal, options.numberOfDecks);
-
+    /** Initializes options that determine some customizable game-specific stuff. */
+    initializeOptions(options: GameOptions|undefined): (keyof typeof GameOptions)[]{
+        let useWildcard = setWildcardOption(this.config, options.useWildcard);
+        let useJoker = setJokerOption(this.config, options.useJoker);
+        let cardsToDraw = setCardsToDraw(this.config, options.cardsToDraw);
+        let cardsToDrawDiscardPile = setCardsToDrawDiscardPile(this.config, options.cardsToDrawDiscardPile);
+        let [cardsToDeal, numberOfDecks] = setCardsToDealAndNumberOfDecks(this.config, this.players.length, options.cardsToDeal, options.numberOfDecks);
         if (this.useJoker && this.useWildcard) this.useWildcard = false;
+
+        return [
+            useWildcard,
+            useJoker,
+            cardsToDraw,
+            cardsToDrawDiscardPile,
+            cardsToDeal,
+            numberOfDecks
+        ]
     }
 
 
@@ -156,13 +158,9 @@ export class Game {
     }
 
 
-    /**
-     * Initializes a Score object, which is used for tracking/calculating score for each round
-     * @param {Game} game 
-     * @returns {GameScore}
-     */
-    initializeScore(game){
-        return new GameScore(game);
+    /** Initializes a Score object, which is used for tracking/calculating score for each round. */
+    initializeScore(){
+        return new GameScore(this);
     }
 
 
