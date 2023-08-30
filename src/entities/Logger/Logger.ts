@@ -1,9 +1,13 @@
 import { Game } from '../Game/Game';
 
+type argList = {
+    [argName: string]: string|number
+}
+
 type LogObject = {
     functionName: string,
     playerId: string|number,
-    args: {[argName: string]: string},
+    args: argList,
     notes: string
 }
 
@@ -44,14 +48,14 @@ export class Logger{
 
 
     /** Logs a game warning/error. */
-    logWarning(functionName: string, playerId: string='GAME', args: {[argName: string]: string}={}, notes=''){
+    logWarning(functionName: string, playerId: string='GAME', args: argList={}, notes=''){
         let logObject: LogObject = {functionName, playerId, args, notes};
         this.warningLog[this.game.currentRound].push(logObject);
     }
 
 
     /** Logs a game action. */
-    logGameAction(functionName: string, playerId: string='GAME', args: {[argName: string]: string}={}, notes=''){
+    logGameAction(functionName: string, playerId: string='GAME', args: argList={}, notes=''){
         let logObject: LogObject = {functionName, playerId, args, notes};
         this.actionLog[this.game.currentRound].push(logObject);
     }   

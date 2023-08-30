@@ -52,8 +52,8 @@ export class Deck{
     
     
     /** Draws specified amount of cards from top of the deck. */
-    draw(count: number): Card[]|false{
-        if (!count) return false;
+    draw(count: number): Card[]{
+        if (!count) return [];
         let drawnCards = this._stack.splice(this._stack.length-count, count);
         return drawnCards;
     }

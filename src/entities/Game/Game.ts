@@ -8,9 +8,9 @@ import { Card } from "../PokerDeck/Card.js";
 import { Meld } from "../Meld/Meld.js";
 
 //some auxiliary functions
-import { loadConfigFile } from "./auxiliary/loadConfig.js";
+import { loadConfigFile } from "./auxiliary/loadConfig";
 import { setCardsToDealAndNumberOfDecks, setCardsToDraw, setCardsToDrawDiscardPile, setJokerOption, setWildcardOption } from "./auxiliary/setGameOptions.js";
-import { validateAndSortMeld } from "../Meld/validateAndSortMeld.js"; 
+import { validateAndSortMeld } from "../Meld/validateAndSortMeld"; 
 
 //path functions, for getting config file regardless of variant location
 import * as path from 'path';
@@ -53,7 +53,7 @@ export class Game {
     protected logger: Logger;
     protected players: Player[];
     protected quitPlayers: Player[];
-    protected initialOptions: GameOptions|undefined;
+    protected initialOptions: GameOptions;
     protected score: GameScore;
 
     //Used for game tracking, public for useability
@@ -63,7 +63,7 @@ export class Game {
 
     //Game deck related
     protected deck: PokerDeck;
-    protected jokerNumber: keyof typeof this.deck.numbers|undefined;
+    protected jokerNumber: keyof typeof this.deck.numbers|false;
     protected validationCards: Card[];
 
 
@@ -74,7 +74,7 @@ export class Game {
      * Creates a Game.
      * Don't override this in variants as it may mess with initialization flow; instead, override individual functions as required.                    
      */
-    constructor(playerIds: string[], options: GameOptions|undefined=undefined, gameId: string=''){
+    constructor(playerIds: string[], options: GameOptions={}, gameId: string=''){
         this.gameId = gameId;
 
         this.config = this.loadConfig();
@@ -90,7 +90,7 @@ export class Game {
         this.cardsToDraw,
         this.cardsToDrawDiscardPile,
         this.cardsToDeal,
-        this.numberOfDecks] = this.initializeOptions(options ? options : {} as GameOptions);
+        this.numberOfDecks] = this.initializeOptions(options);
 
         this.score = this.initializeScore();
         this.currentPlayerIndex = 0;
@@ -161,14 +161,14 @@ export class Game {
 
 
     /** Initializes deck, joker (printed/wildcard/none, depending on game configuration), and a copy of the deck for validation later. */
-    initializeDeckJokerAndValidationCards(): [PokerDeck, string|false, Card[]]{
+    initializeDeckJokerAndValidationCards(): [PokerDeck, keyof typeof this.deck.numbers|false, Card[]]{
         let deck = new PokerDeck(this.numberOfDecks, this.useJoker);
         let validationCards = deck.getCards().slice().sort(Card.compareCardsSuitFirst);
         deck.shuffle();
         
         //set joker either to printed joker ('Joker') or wildcard, or false (nothing).
         //wildcard number is (currentRound+1)%(size of deck numbers)
-        let jokerNumber: string|false;
+        let jokerNumber: keyof typeof this.deck.numbers|false;
         if (this.useJoker) jokerNumber = 'Joker';
         else if (this.useWildcard) jokerNumber = this.getWildcardNumber(deck);
         else jokerNumber = false;
@@ -184,7 +184,7 @@ export class Game {
      */
     getWildcardNumber(deck: PokerDeck){
         if (this.useWildcard){
-            return deck.numbers[this.currentRound+1 % Object.keys(deck.numbers).length];
+            return deck.numbers[this.currentRound+1 % Object.keys(deck.numbers).length] as keyof typeof this.deck.numbers;
         }
         else return false;
     }
@@ -248,7 +248,7 @@ export class Game {
                 'checkRoundEnded', 
                 undefined, 
                 undefined, 
-                `Current player ${this.players[this.currentPlayerIndex].hand.id} has finished hand. Ending round`
+                `Current player ${this.players[this.currentPlayerIndex].id} has finished hand. Ending round`
                 )
             return false;
         }
@@ -383,18 +383,13 @@ export class Game {
     }
 
 
-    /**
-     * Unquits a player who was playing; they will continue next round with their previous round scores intact.
-     * @modifies {logger}
-     * @param {integer} playerId - ID of the player to unquit
-     * @returns {boolean}
-     */
-    unquitPlayer(playerId){
+    /** Unquits a player who was playing; they will continue next round with their previous round scores intact. */
+    unquitPlayer(playerId: string){
         if (!this.validateGameState()) return false;
 
         for (const [index, player] of this.quitPlayers.entries()){
             if (player.id == playerId){
-                unquitter = this.quitPlayers.splice(index, 1);
+                let unquitter = this.quitPlayers.splice(index, 1);
                 this.players.push(...unquitter);
                 this.logger.logGameAction('unquitPlayer', playerId, {playerId}, undefined);
                 return true;
@@ -411,7 +406,7 @@ export class Game {
      * @param {integer} playerId - ID of the new player
      * @returns {boolean}
      */
-    addPlayer(playerId){
+    addPlayer(playerId: string){
         if (!this.validateGameState()) return;
         this.players.push(new Player(this, playerId));
         this.logger.logGameAction('addPlayer', playerId, {playerId}, undefined); 
