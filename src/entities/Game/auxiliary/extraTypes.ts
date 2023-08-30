@@ -1,5 +1,5 @@
-import { Card } from "../PokerDeck/Card"
-import { Meld } from "../Meld/Meld"
+import { Card } from "../../PokerDeck/Card"
+import { Meld } from "../../Meld/Meld"
 
 
 //Storing of some types used in Game here

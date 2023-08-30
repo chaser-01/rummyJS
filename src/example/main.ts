@@ -7,16 +7,14 @@ import { playerDraw } from "./playerDraw";
 
 async function main(){
     //get options and create game
-    let players, options;
-    [players, options] = await getOptions();
+    let [players, options] = await getOptions();
     let playerIds = Array.from(Array(players), (_, index) => `${index}`);
     let game = new Game(playerIds, options);
 
     console.log(`
     -----
     Game configuration: 
-        useWildcard: ${game.useWildcard}
-        useJoker: ${game.useJoker}
+        Joker: ${game.jokerNumber}
         cardsToDraw:  ${game.cardsToDraw}
         cardsToDrawDiscardPile: ${game.cardsToDrawDiscardPile}
         cardsToDeal: ${game.cardsToDeal}

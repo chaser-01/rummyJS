@@ -1,4 +1,4 @@
-import { GameConfig } from "../extraTypes";
+import { GameConfig } from "./extraTypes";
 
 /*
 Functions here are used for setting/verifying config options.

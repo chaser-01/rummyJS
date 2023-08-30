@@ -1,11 +1,11 @@
 //necessary objects
-import * as GameStatus from "./GameStatus.js";
-import { GameScore } from "./GameScore.js";
-import { Logger } from "../Logger/Logger.js";
-import { Player } from "../Player/Player.js";
-import { PokerDeck } from "../PokerDeck/PokerDeck.js";
-import { Card } from "../PokerDeck/Card.js";
-import { Meld } from "../Meld/Meld.js";
+import * as GameStatus from "./GameStatus";
+import { GameScore } from "./GameScore";
+import { Logger } from "../Logger/Logger";
+import { Player } from "../Player/Player";
+import { PokerDeck } from "../PokerDeck/PokerDeck";
+import { Card } from "../PokerDeck/Card";
+import { Meld } from "../Meld/Meld";
 
 //some auxiliary functions
 import { loadConfigFile } from "./auxiliary/loadConfig";
@@ -17,7 +17,7 @@ import * as path from 'path';
 import { fileURLToPath } from 'url';
 
 //import a few types
-import { GameOptions, GameConfig, ExternalGameInfo } from "./extraTypes.js";
+import { GameOptions, GameConfig, ExternalGameInfo } from "./auxiliary/extraTypes.js";
 
 
 
@@ -30,34 +30,32 @@ export class Game {
     /** The variant title; used for accessing the variant's config file too. */
     readonly title = "Rummy"; 
     /** An enum of possible game statuses. */
-    GameStatus = GameStatus.GameStatus;
+    readonly GameStatus = GameStatus.GameStatus;
     /** Default configuration for the variant. */
     protected config: GameConfig;
 
     //Options that can be changed by passing in GameOptions in the constructor.
-    protected useWildcard: boolean;
-    protected useJoker: boolean;
-    protected cardsToDraw: number;
-    protected cardsToDrawDiscardPile: number|"all";
-    protected cardsToDeal: number;
-    protected numberOfDecks: number;
+    protected _useWildcard: boolean;
+    protected _useJoker: boolean;
+    protected _cardsToDraw: number;
+    protected _cardsToDrawDiscardPile: number|"all";
+    protected _cardsToDeal: number;
+    protected _numberOfDecks: number;
 
     //Used for game tracking
     readonly gameId: string;
-    protected logger: Logger;
-    protected players: Player[];
-    protected quitPlayers: Player[];
-    protected initialOptions: GameOptions;
-    protected score: GameScore;
+    protected _logger: Logger;
+    protected _players: Player[];
+    protected _quitPlayers: Player[];
+    protected _initialOptions: GameOptions;
+    protected _score: GameScore;
+    protected _currentPlayerIndex: number;
+    protected _currentRound: number;
+    protected _gameStatus: keyof typeof GameStatus.GameStatus;
 
-    //Used for game tracking, public for useability
-    currentPlayerIndex: number;
-    currentRound: number;
-    gameStatus: keyof typeof GameStatus.GameStatus;
-
-    //Game deck related
-    protected deck: PokerDeck;
-    protected jokerNumber: keyof typeof this.deck.numbers|false;
+    //Game _deck related
+    protected _deck: PokerDeck;
+    protected _jokerNumber: keyof typeof this._deck.numbers|false;
     protected validationCards: Card[];
 
 
@@ -72,28 +70,50 @@ export class Game {
         this.gameId = gameId;
 
         this.config = this.loadConfig();
-        this.logger = new Logger(this);
+        this._logger = new Logger(this);
 
-        this.players = this.initializePlayers(playerIds);
-        this.quitPlayers = [];
+        this._players = this.initializePlayers(playerIds);
+        this._quitPlayers = [];
 
-        this.initialOptions = options;
+        this._initialOptions = options;
 
-        [this.useWildcard,
-        this.useJoker,
-        this.cardsToDraw,
-        this.cardsToDrawDiscardPile,
-        this.cardsToDeal,
-        this.numberOfDecks] = this.initializeOptions(options);
+        [this._useWildcard,
+        this._useJoker,
+        this._cardsToDraw,
+        this._cardsToDrawDiscardPile,
+        this._cardsToDeal,
+        this._numberOfDecks] = this.initializeOptions(options);
 
-        this.score = this.initializeScore();
-        this.currentPlayerIndex = 0;
-        this.currentRound = 0;
-        this.gameStatus = this.GameStatus.ROUND_ENDED;
+        this._score = this.initializeScore();
+        this._currentPlayerIndex = 0;
+        this._currentRound = 0;
+        this._gameStatus = this.GameStatus.ROUND_ENDED;
 
-        [this.deck, this.jokerNumber, this.validationCards] = this.initializeDeckJokerAndValidationCards();
+        [this._deck, this._jokerNumber, this.validationCards] = this.initialize_deckJokerAndValidationCards();
     }
 
+
+    ////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////// Getters/setters //////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+
+
+
+    //Note: Omitted getters/setters that wouldn't be useful outside the class, or are redundant
+    get useWildcard() {return this._useWildcard;}
+    get jokerNumber() {return this._jokerNumber;}
+    get cardsToDraw() {return this._cardsToDraw;}
+    get cardsToDrawDiscardPile() {return this._cardsToDrawDiscardPile;}
+    get cardsToDeal() {return this._cardsToDeal;}
+    get numberOfDecks() {return this._numberOfDecks;}
+
+    get logger() {return this._logger;}
+    get players() {return this._players;}
+    get quitPlayers() {return this._quitPlayers;}
+    get score() {return this._score;}
+    get currentPlayerIndex() {return this._currentPlayerIndex;}
+    get currentRound() {return this._currentRound;}
+    get gameStatus() {return this._gameStatus;}
 
 
 
@@ -120,58 +140,57 @@ export class Game {
     }
 
 
-    /** Initializes options that determine some customizable game-specific stuff. */
-    initializeOptions(options: GameOptions): [
-        boolean, boolean, number, number|"all", number, number
-    ]{
-        let useWildcard = setWildcardOption(this.config, options.useWildcard);
-        let useJoker = setJokerOption(this.config, options.useJoker);
-        let cardsToDraw = setCardsToDraw(this.config, options.cardsToDraw);
-        let cardsToDrawDiscardPile = setCardsToDrawDiscardPile(this.config, options.cardsToDrawDiscardPile);
-        let [cardsToDeal, numberOfDecks] = setCardsToDealAndNumberOfDecks(this.config, this.players.length, options.cardsToDeal, options.numberOfDecks);
-        if (this.useJoker && this.useWildcard) this.useWildcard = false;
+    /** 
+     * Initializes options that determine some customizable game-specific stuff.
+     * Variants with their own options should override this, then super it.
+    */
+    initializeOptions(options: GameOptions): [boolean, boolean, number, number|"all", number, number]{
+        let _useWildcard = setWildcardOption(this.config, options.useWildcard);
+        let _useJoker = setJokerOption(this.config, options.useJoker);
+        let _cardsToDraw = setCardsToDraw(this.config, options.cardsToDraw);
+        let _cardsToDrawDiscardPile = setCardsToDrawDiscardPile(this.config, options.cardsToDrawDiscardPile);
+        let [_cardsToDeal, _numberOfDecks] = setCardsToDealAndNumberOfDecks(this.config, this._players.length, options.cardsToDeal, options.numberOfDecks);
+        if (this._useJoker && this._useWildcard) this._useWildcard = false;
 
         return [
-            useWildcard,
-            useJoker,
-            cardsToDraw,
-            cardsToDrawDiscardPile,
-            cardsToDeal,
-            numberOfDecks
+            _useWildcard,
+            _useJoker,
+            _cardsToDraw,
+            _cardsToDrawDiscardPile,
+            _cardsToDeal,
+            _numberOfDecks
         ]
     }
 
 
-    /** Initializes an array of player objects */
+    /** Initializes an array of player objects. */
     initializePlayers(playerIds: string[]){
-        let players = [];
+        let _players = [];
         for (const playerId of playerIds){
-            players.push(new Player(this, playerId));
+            _players.push(new Player(this, playerId));
         }
-        return players;
+        return _players;
     }
 
 
-    /** Initializes a Score object, which is used for tracking/calculating score for each round. */
+    /** Initializes a score object which is used for tracking/calculating score for current round. */
     initializeScore(){
-        return new GameScore(this);
-    }
+    return new GameScore(this);}
 
 
     /** Initializes deck, joker (printed/wildcard/none, depending on game configuration), and a copy of the deck for validation later. */
-    initializeDeckJokerAndValidationCards(): [PokerDeck, keyof typeof this.deck.numbers|false, Card[]]{
-        let deck = new PokerDeck(this.numberOfDecks, this.useJoker);
-        let validationCards = deck.getCards().slice().sort(Card.compareCardsSuitFirst);
-        deck.shuffle();
+    initialize_deckJokerAndValidationCards(): [PokerDeck, keyof typeof this._deck.numbers|false, Card[]]{
+        let _deck = new PokerDeck(this._numberOfDecks, this._useJoker);
+        let validationCards = _deck.getCards().slice().sort(Card.compareCardsSuitFirst);
+        _deck.shuffle();
         
-        //set joker either to printed joker ('Joker') or wildcard, or false (nothing).
-        //wildcard number is (currentRound+1)%(size of deck numbers)
-        let jokerNumber: keyof typeof this.deck.numbers|false;
-        if (this.useJoker) jokerNumber = 'Joker';
-        else if (this.useWildcard) jokerNumber = this.getWildcardNumber(deck);
-        else jokerNumber = false;
+        //wildcard number = (_currentRound+1)%(size of _deck numbers)
+        let _jokerNumber: keyof typeof this._deck.numbers|false;
+        if (this._useJoker) _jokerNumber = 'Joker';
+        else if (this._useWildcard) _jokerNumber = this.getWildcardNumber(_deck);
+        else _jokerNumber = false;
 
-        return [deck, jokerNumber, validationCards];
+        return [_deck, _jokerNumber, validationCards];
     }
 
 
@@ -180,9 +199,9 @@ export class Game {
      * Variants may handle wildcards differently, so overriding this method may be useful.
      * Currently, wildcard starts at 2 and increments on each round.
      */
-    getWildcardNumber(deck: PokerDeck){
-        if (this.useWildcard){
-            return deck.numbers[this.currentRound+1 % Object.keys(deck.numbers).length] as keyof typeof this.deck.numbers;
+    getWildcardNumber(_deck: PokerDeck){
+        if (this._useWildcard){
+            return _deck.numbers[this._currentRound+1 % Object.keys(_deck.numbers).length] as keyof typeof this._deck.numbers;
         }
         else return false;
     }
@@ -190,29 +209,28 @@ export class Game {
 
 
     ////////////////////////////////////////////////////////////////////////////
-    ///////////////////////// Validation functions /////////////////////////
+    /////////////////////////// Validation functions ///////////////////////////
     ////////////////////////////////////////////////////////////////////////////
 
 
 
-    /** Validates that the cards in play tally with validationCards, and all melds are valid.
-     */
+    /** Validates that the cards in play tally with validationCards, and all melds are valid. */
     validateGameState(){
         if (!this.checkGameEnded() || !this.checkRoundEnded()) return false;
 
-        //get deck and discard pile cards
+        //get _deck and discard pile cards
         let checkCards: Card[] = [];
-        checkCards.push(...this.deck.getCards());
-        checkCards.push(...this.deck.getDiscardPile());
+        checkCards.push(...this._deck.getCards());
+        checkCards.push(...this._deck.getDiscardPile());
 
         //for each player, add their hand cards to checkCards; then validate each meld, then add the cards to checkCards
-        for (const player of this.players){
+        for (const player of this._players){
             checkCards.push(...player.hand);
             for (const meld of player.melds){
                 if (meld.cards && meld.checkAndSortMeld()) checkCards.push(...meld.cards);
                 else { 
-                    this.logger.logWarning('validateGameState', undefined, undefined, `Player ${player.id} has invalid meld: ${meld.cards}`);
-                    this.setGameStatus(this.GameStatus.END_GAME);
+                    this._logger.logWarning('validateGameState', undefined, undefined, `Player ${player.id} has invalid meld: ${meld.cards}`);
+                    this.set_GameStatus(this.GameStatus.END_GAME);
                     return false;
                 }
             }
@@ -221,16 +239,16 @@ export class Game {
         //sort checkCards and compare with validationCards (as strings, since they don't reference the same card objects)
         checkCards.sort(Card.compareCardsSuitFirst);    
         if (JSON.stringify(checkCards) != JSON.stringify(this.validationCards)){
-            this.logger.logWarning('validateGameState', undefined, undefined, 'Invalid game state'); 
-            this.setGameStatus(this.GameStatus.END_GAME);
+            this._logger.logWarning('validateGameState', undefined, undefined, 'Invalid game state'); 
+            this.set_GameStatus(this.GameStatus.END_GAME);
             return false;
         }
         return true;
     }
 
-    //Simply checks that the current gameStatus is correct
-    validateGameStatus(intendedGameStatus: keyof typeof this.GameStatus){
-        if (intendedGameStatus !== this.gameStatus) return false;
+    //Simply checks that the current _gameStatus is correct
+    validateGameStatus(intended_GameStatus: keyof typeof this.GameStatus){
+        if (intended_GameStatus !== this._gameStatus) return false;
         return true;
     }
 
@@ -240,13 +258,13 @@ export class Game {
      * Normally only occurs when the current (playing) player runs out their hand, but variants may have different conditions.
      */
     checkRoundEnded(){
-        if (this.players[this.currentPlayerIndex].hand.length==0 && this.players[this.currentPlayerIndex].playing){
-            this.setGameStatus(this.GameStatus.ROUND_ENDED);
-            this.logger.logGameAction(
+        if (this._players[this._currentPlayerIndex].hand.length==0 && this._players[this._currentPlayerIndex].playing){
+            this.set_GameStatus(this.GameStatus.ROUND_ENDED);
+            this._logger.logGameAction(
                 'checkRoundEnded', 
                 undefined, 
                 undefined, 
-                `Current player ${this.players[this.currentPlayerIndex].id} has finished hand. Ending round`
+                `Current player ${this._players[this._currentPlayerIndex].id} has finished hand. Ending round`
                 )
             return false;
         }
@@ -262,13 +280,13 @@ export class Game {
     //TO DO: Possible other game-end conditions: Wildcard has done 2 to Ace, or hit some defined max round limit?
     checkGameEnded(){
         let still_playing=0;
-        for (const player of this.players){
+        for (const player of this._players){
             if (player.playing) still_playing++;
         }
 
         if (still_playing<=1){
-            this.logger.logGameAction('checkGameEnded', undefined, undefined, '<=1 player left, ending game');
-            this.setGameStatus(this.GameStatus.END_GAME);
+            this._logger.logGameAction('checkGameEnded', undefined, undefined, '<=1 player left, ending game');
+            this.set_GameStatus(this.GameStatus.END_GAME);
             return false;
         }
         return true;
@@ -282,9 +300,9 @@ export class Game {
     
 
 
-    /** Setter for gameStatus. */
-    setGameStatus(gameStatus: keyof typeof this.GameStatus){
-        this.gameStatus = gameStatus;
+    /** Setter for _gameStatus. */
+    set_GameStatus(_gameStatus: keyof typeof this.GameStatus){
+        this._gameStatus = _gameStatus;
         return true;
     }
 
@@ -296,45 +314,45 @@ export class Game {
     nextRound(){
         if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.ROUND_ENDED)) return false;
 
-        //calculate the round score
-        if (this.currentRound!=0) this.score.evaluateRoundScore();
+        //calculate the round _score
+         if (this._currentRound!=0) this._score.evaluateRoundScore();
 
         //increment round
-        this.currentRound++;
+        this._currentRound++;
 
-        //moves just-quit players to quitPlayers, and just-unquit players to players
-        for (const [index, player] of this.players.entries()){
-            if (!player.playing) this.quitPlayers.push(...this.players.splice(index, 1));
+        //moves just-quit _players to _quitPlayers, and just-unquit _players to _players
+        for (const [index, player] of this._players.entries()){
+            if (!player.playing) this._quitPlayers.push(...this._players.splice(index, 1));
         }
-        for (const [index, player] of this.quitPlayers.entries()){
-            if (player.playing) this.players.push(...this.quitPlayers.splice(index, 1));
+        for (const [index, player] of this._quitPlayers.entries()){
+            if (player.playing) this._players.push(...this._quitPlayers.splice(index, 1));
         }
         
-        //set game config again (particularly cardsToDeal, if number of players changed)
-        this.initializeOptions(this.initialOptions);
+        //set game config again (particularly _cardsToDeal, if number of _players changed)
+        this.initializeOptions(this._initialOptions);
 
-        //reset deck and get the next jokerNumber
-        [this.deck, this.jokerNumber, this.validationCards] = this.initializeDeckJokerAndValidationCards();
+        //reset _deck and get the next _jokerNumber
+        [this._deck, this._jokerNumber, this.validationCards] = this.initialize_deckJokerAndValidationCards();
         
         //deal cards
-        for (const player of this.players){
+        for (const player of this._players){
             player.resetCards();
-            player.addToHand(this.deck.draw(this.cardsToDeal));
+            player.addToHand(this._deck.draw(this._cardsToDeal));
         }
 
         //if it's the first round, deal extra card to first player + let them start
-        if (this.currentRound===1){
-            this.players[0].addToHand(this.deck.draw(1));
-            this.setGameStatus(this.GameStatus.PLAYER_TURN);
+        if (this._currentRound===1){
+            this._players[0].addToHand(this._deck.draw(1));
+            this.set_GameStatus(this.GameStatus.PLAYER_TURN);
         }   
 
         //else, find the previous winner and deal them extra card + let them start
         else{
             //TO DO: get last round winner
-            this.setGameStatus(this.GameStatus.PLAYER_TO_DRAW);
+            this.set_GameStatus(this.GameStatus.PLAYER_TO_DRAW);
         }
 
-        this.logger.logNewRound();
+        this._logger.logNewRound();
         return true;
     }
 
@@ -343,41 +361,41 @@ export class Game {
     nextPlayer(){
         if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN_ENDED)) return false;
 
-        //while next player isn't playing, go to the next next player (modulo no. of players, to loop back to first player)
-        do {this.currentPlayerIndex = (this.currentPlayerIndex+1) % (this.players.length);}
-        while (!this.players[(this.currentPlayerIndex+1) % (this.players.length)].playing)
+        //while next player isn't playing, go to the next next player (modulo no. of _players, to loop back to first player)
+        do {this._currentPlayerIndex = (this._currentPlayerIndex+1) % (this._players.length);}
+        while (!this._players[(this._currentPlayerIndex+1) % (this._players.length)].playing)
 
-        this.setGameStatus(this.GameStatus.PLAYER_TO_DRAW);
+        this.set_GameStatus(this.GameStatus.PLAYER_TO_DRAW);
         return true;
     }
 
 
     /** Sets a player as having quit; keeps their cards in their possession for current round. */
-    quitPlayer(playerIndex=this.currentPlayerIndex){
+    quitPlayer(playerIndex=this._currentPlayerIndex){
         if (!this.validateGameState()) return false;
 
-        if (playerIndex > this.players.length) return false;
+        if (playerIndex > this._players.length) return false;
 
-        this.players[playerIndex].playing = false;
+        this._players[playerIndex].playing = false;
         if (this.checkGameEnded()) return true;
-        if (this.currentPlayerIndex === playerIndex){
-            this.setGameStatus(this.GameStatus.PLAYER_TURN_ENDED);
+        if (this._currentPlayerIndex === playerIndex){
+            this.set_GameStatus(this.GameStatus.PLAYER_TURN_ENDED);
             this.nextPlayer();
         }
-        this.logger.logGameAction('quitPlayer', this.players[playerIndex].id, {playerIndex}, undefined);
+        this._logger.logGameAction('quitPlayer', this._players[playerIndex].id, {playerIndex}, undefined);
         return true;
     }
 
 
-    /** Unquits a player who was playing; they will continue next round with their previous round scores intact. */
+    /** Unquits a player who was playing; they will continue next round with their previous round _scores intaS. */
     unquitPlayer(playerId: string){
         if (!this.validateGameState()) return false;
 
-        for (const [index, player] of this.quitPlayers.entries()){
+        for (const [index, player] of this._quitPlayers.entries()){
             if (player.id == playerId){
-                let unquitter = this.quitPlayers.splice(index, 1);
-                this.players.push(...unquitter);
-                this.logger.logGameAction('unquitPlayer', playerId, {playerId}, undefined);
+                let unquitter = this._quitPlayers.splice(index, 1);
+                this._players.push(...unquitter);
+                this._logger.logGameAction('unquitPlayer', playerId, {playerId}, undefined);
                 return true;
             }
         }
@@ -389,8 +407,8 @@ export class Game {
     /** Adds a new player to the game. */
     addPlayer(playerId: string){
         if (!this.validateGameState()) return;
-        this.players.push(new Player(this, playerId));
-        this.logger.logGameAction('addPlayer', playerId, {playerId}, undefined); 
+        this._players.push(new Player(this, playerId));
+        this._logger.logGameAction('addPlayer', playerId, {playerId}, undefined); 
     }
 
 
@@ -410,52 +428,52 @@ export class Game {
     
     /** Sorts a player's hand, by suit THEN by number. */
     //TO DO: this is broken (probably the comparison function), plz fix
-    sortHandBySuit(playerIndex = this.currentPlayerIndex){
+    sortHandBySuit(playerIndex = this._currentPlayerIndex){
         if (!this.validateGameState()) return false;
 
-        this.players[playerIndex].hand.sort((a, b) => {
-            if (a.number == this.jokerNumber && b.number == this.jokerNumber) return Card.compareCardsSuitFirst(a, b);
-            if (a.number == this.jokerNumber) return 1;
-            if (b.number == this.jokerNumber) return -1;
+        this._players[playerIndex].hand.sort((a, b) => {
+            if (a.number == this._jokerNumber && b.number == this._jokerNumber) return Card.compareCardsSuitFirst(a, b);
+            if (a.number == this._jokerNumber) return 1;
+            if (b.number == this._jokerNumber) return -1;
             return Card.compareCardsSuitFirst(a, b);
         })
 
-        this.logger.logGameAction('sortHandBySuit', this.players[playerIndex].id, undefined, undefined);
+        this._logger.logGameAction('sortHandBySuit', this._players[playerIndex].id, undefined, undefined);
         return true;
     }
 
 
-    /** Sorts a player's hand, by number THEN by suit. Defaults to current players. */
-    sortHandByNumber(playerIndex = this.currentPlayerIndex){
+    /** Sorts a player's hand, by number THEN by suit. Defaults to current _players. */
+    sortHandByNumber(playerIndex = this._currentPlayerIndex){
         if (!this.validateGameState()) return false;
 
-        this.players[playerIndex].hand.sort((a, b) => {
-            if (a.number == this.jokerNumber && b.number == this.jokerNumber) return Card.compareCardsNumberFirst(a, b);
-            if (a.number == this.jokerNumber) return 1;
-            if (b.number == this.jokerNumber) return -1;
+        this._players[playerIndex].hand.sort((a, b) => {
+            if (a.number == this._jokerNumber && b.number == this._jokerNumber) return Card.compareCardsNumberFirst(a, b);
+            if (a.number == this._jokerNumber) return 1;
+            if (b.number == this._jokerNumber) return -1;
             return Card.compareCardsNumberFirst(a, b);
         })
 
-        this.logger.logGameAction('sortHandByNumber', this.players[playerIndex].id, undefined, undefined);
+        this._logger.logGameAction('sortHandByNumber', this._players[playerIndex].id, undefined, undefined);
         return true;
     }
 
 
-    /** Draws 'cardsToDraw' cards from the deck, for the current player. */
+    /** Draws '_cardsToDraw' cards from the deck, for the current player. */
     drawFromDeck(){
         if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TO_DRAW)) return false;
 
-        let drawnCards = this.deck.draw(this.cardsToDraw);
-        this.players[this.currentPlayerIndex].hand.push(...drawnCards);
+        let drawnCards = this._deck.draw(this._cardsToDraw);
+        this._players[this._currentPlayerIndex].hand.push(...drawnCards);
 
-        this.logger.logGameAction('drawFromDeck', this.players[this.currentPlayerIndex].id, undefined, `Card drawn: ${drawnCards}`); 
-        this.setGameStatus(this.GameStatus.PLAYER_TURN);
+        this._logger.logGameAction('drawFromDeck', this._players[this._currentPlayerIndex].id, undefined, `Card drawn: ${drawnCards}`); 
+        this.set_GameStatus(this.GameStatus.PLAYER_TURN);
         return true;
     }
 
 
     /**
-     * Draws 'cardsToDrawDiscardPile' cards from the discard pile, for the current player.
+     * Draws '_cardsToDrawDiscardPile' cards from the discard pile, for the current player.
      * If insufficient cards in discard pile, returns false.
      */
     drawFromDiscardPile(){
@@ -463,24 +481,24 @@ export class Game {
 
         //if there's no discard pile, return false
         let drawnCards: Card[];
-        let discardSize = this.deck.getDiscardPileSize();
+        let discardSize = this._deck.getDiscardPileSize();
         if (discardSize==0) return false;
         
         //if "all", draw the entire discard pile
-        if (this.cardsToDrawDiscardPile=="all"){
-            drawnCards = this.deck.drawFromDiscardPile(this.deck.getDiscardPileSize());
+        if (this._cardsToDrawDiscardPile=="all"){
+            drawnCards = this._deck.drawFromDiscardPile(this._deck.getDiscardPileSize());
         }
 
         //else check if discardPile size < than draw amount. if so, return false; else draw the cards
         else{
-            if (this.deck.getDiscardPileSize() < this.cardsToDrawDiscardPile) return false;
-            drawnCards = this.deck.drawFromDiscardPile(this.cardsToDrawDiscardPile);       
+            if (this._deck.getDiscardPileSize() < this._cardsToDrawDiscardPile) return false;
+            drawnCards = this._deck.drawFromDiscardPile(this._cardsToDrawDiscardPile);       
         }
         
         //add drawnCards to player hand and return
-        this.players[this.currentPlayerIndex].hand.push(...drawnCards);
-        this.logger.logGameAction('drawFromDiscardPile', this.players[this.currentPlayerIndex].id, undefined, `Card drawn: ${drawnCards}`);
-        this.setGameStatus(this.GameStatus.PLAYER_TURN);
+        this._players[this._currentPlayerIndex].hand.push(...drawnCards);
+        this._logger.logGameAction('drawFromDiscardPile', this._players[this._currentPlayerIndex].id, undefined, `Card drawn: ${drawnCards}`);
+        this.set_GameStatus(this.GameStatus.PLAYER_TURN);
         return true;
     }
 
@@ -493,40 +511,40 @@ export class Game {
         let indexSet = new Set(indexArray);
 
         //get copy of player's hand, to copy back if meld is invalid
-        let playerHandCopy = this.players[this.currentPlayerIndex].hand.slice();
+        let playerHandCopy = this._players[this._currentPlayerIndex].hand.slice();
 
         //check if each index is valid, then add the corresponding card to meldCards
         let meldCards = [];
         for (const index of indexSet){
-            if (isNaN(index) || index>this.players[this.currentPlayerIndex].hand.length){
-                this.logger.logWarning('createMeld', this.players[this.currentPlayerIndex].id, {indexArray}, 'Invalid index array');
-                this.players[this.currentPlayerIndex].hand = playerHandCopy;
+            if (isNaN(index) || index>this._players[this._currentPlayerIndex].hand.length){
+                this._logger.logWarning('createMeld', this._players[this._currentPlayerIndex].id, {indexArray}, 'Invalid index array');
+                this._players[this._currentPlayerIndex].hand = playerHandCopy;
                 return false;
             }
-            meldCards.push(...this.players[this.currentPlayerIndex].hand.slice(index, index+1)); 
+            meldCards.push(...this._players[this._currentPlayerIndex].hand.slice(index, index+1)); 
         }
         
         //then search and remove the cards from the hand 
         //if this is done while getting cards, card indexes in indexArray become invalid due to changing hand size
         for (const meldCard of meldCards){
-            this.players[this.currentPlayerIndex].hand = this.players[this.currentPlayerIndex].hand.filter(card =>{
+            this._players[this._currentPlayerIndex].hand = this._players[this._currentPlayerIndex].hand.filter(card =>{
                 return !(card.suit==meldCard.suit && card.number==meldCard.number);
             })
         }
 
         //if meld is valid, create the Meld object and add it to player's melds; else, reset the player's hand
-        if (validateAndSortMeld(meldCards, this.jokerNumber)){
-            let newMeld = new Meld(meldCards, this.jokerNumber);
-            this.players[this.currentPlayerIndex].addMeld(newMeld);
-            this.logger.logGameAction('createMeld', this.players[this.currentPlayerIndex].id, {indexArray});
+        if (validateAndSortMeld(meldCards, this._jokerNumber)){
+            let newMeld = new Meld(meldCards, this._jokerNumber);
+            this._players[this._currentPlayerIndex].addMeld(newMeld);
+            this._logger.logGameAction('createMeld', this._players[this._currentPlayerIndex].id, {indexArray});
             return true;
         }
     
         else{
             this.invalidMeldDeclaration();
-            this.logger.logWarning('createMeld', this.players[this.currentPlayerIndex].id, {indexArray}, 'Invalid meld');
+            this._logger.logWarning('createMeld', this._players[this._currentPlayerIndex].id, {indexArray}, 'Invalid meld');
             this.invalidMeldDeclaration();
-            this.players[this.currentPlayerIndex].hand = playerHandCopy;
+            this._players[this._currentPlayerIndex].hand = playerHandCopy;
             return false;
         }
     }
@@ -546,26 +564,26 @@ export class Game {
     addToMeld(addingCardIndex: number, meldOwnerIndex: number, meldIndex: number){
         if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN)) return;
 
-        if (addingCardIndex >= this.players[this.currentPlayerIndex].hand.length ||
-            meldOwnerIndex >= this.players.length ||
-            meldIndex >= this.players[meldOwnerIndex].melds.length) 
+        if (addingCardIndex >= this._players[this._currentPlayerIndex].hand.length ||
+            meldOwnerIndex >= this._players.length ||
+            meldIndex >= this._players[meldOwnerIndex].melds.length) 
             return false;
 
-        let potentialMeld = this.players[meldOwnerIndex].melds[meldIndex];
-        let addingCard = this.players[this.currentPlayerIndex].hand[addingCardIndex];
+        let potentialMeld = this._players[meldOwnerIndex].melds[meldIndex];
+        let addingCard = this._players[this._currentPlayerIndex].hand[addingCardIndex];
 
         if (potentialMeld.addCard(addingCard)){
-            this.players[meldOwnerIndex].melds[meldIndex] = potentialMeld;
-            this.players[this.currentPlayerIndex].hand.splice(addingCardIndex, 1);
+            this._players[meldOwnerIndex].melds[meldIndex] = potentialMeld;
+            this._players[this._currentPlayerIndex].hand.splice(addingCardIndex, 1);
 
-            this.logger.logGameAction('addToMeld', this.players[this.currentPlayerIndex].id, {addingCardIndex, meldOwnerIndex, meldIndex});
+            this._logger.logGameAction('addToMeld', this._players[this._currentPlayerIndex].id, {addingCardIndex, meldOwnerIndex, meldIndex});
             return true;
         }
 
         else{
-            this.logger.logWarning(
+            this._logger.logWarning(
                 'addToMeld',
-                this.players[this.currentPlayerIndex].id,
+                this._players[this._currentPlayerIndex].id,
                 {addingCardIndex, meldOwnerIndex, meldIndex},
                 'Invalid meld addition'
                 );
@@ -582,33 +600,33 @@ export class Game {
         replacedCardIndex: number) {
         if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN)) return;
 
-        if (replacingCardIndex >= this.players[this.currentPlayerIndex].hand.length ||
-            meldOwnerIndex >= this.players.length ||
-            meldIndex >= this.players[meldOwnerIndex].melds.length ||
-            replacedCardIndex >= this.players[meldOwnerIndex].melds[meldIndex].cards.length) 
+        if (replacingCardIndex >= this._players[this._currentPlayerIndex].hand.length ||
+            meldOwnerIndex >= this._players.length ||
+            meldIndex >= this._players[meldOwnerIndex].melds.length ||
+            replacedCardIndex >= this._players[meldOwnerIndex].melds[meldIndex].cards.length) 
             return false;
 
-        let potentialMeld = this.players[meldOwnerIndex].melds[meldIndex];
-        let replacingCard = this.players[this.currentPlayerIndex].hand[replacingCardIndex];
+        let potentialMeld = this._players[meldOwnerIndex].melds[meldIndex];
+        let replacingCard = this._players[this._currentPlayerIndex].hand[replacingCardIndex];
         let replacedCard = potentialMeld.replaceCard(replacingCard, replacedCardIndex);
 
         if (replacedCard){
-            this.players[meldOwnerIndex].melds[meldIndex] = potentialMeld;
-            this.players[this.currentPlayerIndex].hand.splice(replacingCardIndex, 1);
-            this.players[this.currentPlayerIndex].addToHand([replacedCard]);
+            this._players[meldOwnerIndex].melds[meldIndex] = potentialMeld;
+            this._players[this._currentPlayerIndex].hand.splice(replacingCardIndex, 1);
+            this._players[this._currentPlayerIndex].addToHand([replacedCard]);
 
-            this.logger.logGameAction(
+            this._logger.logGameAction(
                 'replaceMeldCard',
-                this.players[this.currentPlayerIndex].id,
+                this._players[this._currentPlayerIndex].id,
                 {replacingCardIndex, meldOwnerIndex, meldIndex, replacedCardIndex}
                 );
             return true;
         }
 
         else{
-            this.logger.logWarning(
+            this._logger.logWarning(
                 'replaceMeldCard',
-                this.players[this.currentPlayerIndex].id,
+                this._players[this._currentPlayerIndex].id,
                 {replacingCardIndex, meldOwnerIndex, meldIndex, replacedCardIndex},
                 'Invalid card replacement'
             );
@@ -621,15 +639,15 @@ export class Game {
     endTurn(cardIndex: number){
         if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN)) return false;
 
-        if (cardIndex >= this.players[this.currentPlayerIndex].hand.length || isNaN(cardIndex)){
-            this.logger.logWarning('endTurn', this.players[this.currentPlayerIndex].id, {cardIndex}, undefined);
+        if (cardIndex >= this._players[this._currentPlayerIndex].hand.length || isNaN(cardIndex)){
+            this._logger.logWarning('endTurn', this._players[this._currentPlayerIndex].id, {cardIndex}, undefined);
             return false;
         }
 
-        let discardedCard = this.players[this.currentPlayerIndex].hand.splice(cardIndex, 1)[0];
-        this.deck.addToDiscardPile(discardedCard);
-        this.logger.logGameAction('endTurn', this.players[this.currentPlayerIndex].id, {cardIndex}, undefined);
-        this.setGameStatus(this.GameStatus.PLAYER_TURN_ENDED);
+        let discardedCard = this._players[this._currentPlayerIndex].hand.splice(cardIndex, 1)[0];
+        this._deck.addToDiscardPile(discardedCard);
+        this._logger.logGameAction('endTurn', this._players[this._currentPlayerIndex].id, {cardIndex}, undefined);
+        this.set_GameStatus(this.GameStatus.PLAYER_TURN_ENDED);
         return true;
     }
 
@@ -642,22 +660,22 @@ export class Game {
 
 
     /** Returns an object with information useful for a specified player (defaults to current player). */
-    getGameInfoForPlayer(playerIndex = this.currentPlayerIndex){
+    getGameInfoForPlayer(playerIndex = this._currentPlayerIndex){
 
         let gameInfo: ExternalGameInfo = 
         {
-            jokerNumber: this.jokerNumber,
-            deckSize: this.deck.remaining(),
-            topDiscardCard: this.deck.getTopOfDiscardPile(),
-            discardPileSize: this.deck.getDiscardPileSize(),
+            jokerNumber: this._jokerNumber,
+            deckSize: this._deck.remaining(),
+            topDiscardCard: this._deck.getTopOfDiscardPile(),
+            discardPileSize: this._deck.getDiscardPileSize(),
 
             currentPlayer: {
-                id: this.players[playerIndex].id,
-                hand: this.players[playerIndex].hand,
-                melds: this.players[playerIndex].melds
+                id: this._players[playerIndex].id,
+                hand: this._players[playerIndex].hand,
+                melds: this._players[playerIndex].melds
             },
 
-            tableMelds: this.players.reduce((acc: {[playerId: string]: Meld[]}, player) => {
+            tableMelds: this._players.reduce((acc: {[playerId: string]: Meld[]}, player) => {
                 acc[player.id] = player.melds;
                 return acc;
             }, {})
