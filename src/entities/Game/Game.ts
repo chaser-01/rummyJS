@@ -121,7 +121,9 @@ export class Game {
 
 
     /** Initializes options that determine some customizable game-specific stuff. */
-    initializeOptions(options: GameOptions): any[]{
+    initializeOptions(options: GameOptions): [
+        boolean, boolean, number, number|"all", number, number
+    ]{
         let useWildcard = setWildcardOption(this.config, options.useWildcard);
         let useJoker = setJokerOption(this.config, options.useJoker);
         let cardsToDraw = setCardsToDraw(this.config, options.cardsToDraw);
