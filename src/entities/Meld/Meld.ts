@@ -8,8 +8,8 @@ export class Meld {
 
     /** The meld cards. */
     cards: Card[];
-    /** The optional joker number; if present, must be a key in `numbers`. */
-    jokerNumber: keyof typeof numbers | 0;
+    /** The optional joker number; if present, must be a key in `numbers`. If none, it is false. */
+    jokerNumber: keyof typeof numbers|false;
     /** The maximum size for a set. Rules dictate that this is by default 4. */
     maxSetSize: number;
 
@@ -21,7 +21,7 @@ export class Meld {
      * Creates a Meld.
      * @constructor
      */
-    constructor(cards, jokerNumber: (keyof typeof numbers|0) =0, maxSetSize=4){
+    constructor(cards: Card[], jokerNumber: (keyof typeof numbers|false)=false, maxSetSize=4){
         if (validateAndSortMeld(cards, jokerNumber, maxSetSize)){
             this.cards = cards;
         }
@@ -38,15 +38,15 @@ export class Meld {
      * If no cards are passed in, operates on the instance's cards.
      */
     checkAndSortMeld(
-        cards: Card[] =this.cards, 
-        jokerNumber: (keyof typeof numbers|0) =this.jokerNumber, 
-        maxSetSize: number =this.maxSetSize){
+        cards: Card[] = this.cards, 
+        jokerNumber: (keyof typeof numbers|false) = this.jokerNumber, 
+        maxSetSize: number = this.maxSetSize){
         return validateAndSortMeld(cards, jokerNumber, maxSetSize);
     }
 
 
     /** Verifies that a card can be added to the meld, and still form a valid meld. */
-    addCard(newCard: Card[]){
+    addCard(newCard: Card){
         let modifiedCards = [...this.cards].concat(newCard);
         if (this.checkAndSortMeld(modifiedCards)){
             this.cards = this.cards.concat(newCard);

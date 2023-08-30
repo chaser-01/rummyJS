@@ -6,7 +6,7 @@ import { numbers } from "../PokerDeck/suitsNumbers";
 
 
 /** Validates an array of cards as a meld, and sorts the cards into the valid meld in-place. */
-export function validateAndSortMeld(cards: Card[], jokerNumber: (keyof typeof numbers|0)=0, maxSetSize: number=4) {
+export function validateAndSortMeld(cards: Card[], jokerNumber: (keyof typeof numbers|false)=false, maxSetSize: number=4) {
   if (Array.isArray(cards) && cards.length>=3 && (isValidSequence(cards, jokerNumber) || isValidSet(cards, jokerNumber, maxSetSize))) {
     return true;
   } else {
@@ -20,12 +20,12 @@ export function validateAndSortMeld(cards: Card[], jokerNumber: (keyof typeof nu
  * Checks if an array of cards forms a valid sequence, ie adjacent numbers and same suits.
  * If valid, sorts the array to form the sequence before returning.
  */
-function isValidSequence(cards: Card[], jokerNumber: (keyof typeof numbers|0)=0) {
+function isValidSequence(cards: Card[], jokerNumber: (keyof typeof numbers|false)=false) {
   //filter out jokers and sort the cards
-  let jokers = [];
+  let jokers: Card[] = [];
   let jokerlessCards = cards;
   let sortedCards = jokerlessCards;
-  if (jokerNumber!=0) [jokerlessCards, jokers] = filterJokers(cards, jokerNumber);
+  if (jokerNumber!=false) [jokerlessCards, jokers] = filterJokers(cards, jokerNumber);
   jokerlessCards.sort(Card.compareCardsNumberFirst);
 
   let isValid = true;
@@ -67,11 +67,11 @@ function isValidSequence(cards: Card[], jokerNumber: (keyof typeof numbers|0)=0)
  * Checks if an array of cards forms a valid set, ie all same numbers.
  * If valid, sorts the array to form the set before returning.
  */
-function isValidSet(cards: Card[], jokerNumber: (keyof typeof numbers|0)=0, maxSetSize: number=4) {
+function isValidSet(cards: Card[], jokerNumber: (keyof typeof numbers|false)=false, maxSetSize: number=4) {
   //filter out jokers and sort the cards
-  let jokers = [];
+  let jokers: Card[] = [];
   let jokerlessCards = cards;
-  if (jokerNumber!=0) [jokerlessCards, jokers] = filterJokers(cards, jokerNumber);
+  if (jokerNumber!=false) [jokerlessCards, jokers] = filterJokers(cards, jokerNumber);
   jokerlessCards.sort(Card.compareCardsNumberFirst);
 
   //check that each non-joker card's number is the same
@@ -90,11 +90,11 @@ function isValidSet(cards: Card[], jokerNumber: (keyof typeof numbers|0)=0, maxS
 
 
 //Filters and counts jokers from an input array of cards, and returns joker count + filtered cards
-function filterJokers(cards: Card[], jokerNumber: (keyof typeof numbers|0)=0){
-  let jokers=[];
-  let jokerlessCards = [];
+function filterJokers(cards: Card[], jokerNumber: (keyof typeof numbers|false)=false){
+  let jokers: Card[] = [];
+  let jokerlessCards: Card[] = [];
 
-  if (jokerNumber!=0){
+  if (jokerNumber!=false){
     jokerlessCards = cards.filter(card => {
       if (card.number==jokerNumber) {
         jokers.concat(card);

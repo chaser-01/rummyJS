@@ -1,3 +1,5 @@
+import { GameConfig } from "../extraTypes";
+
 /*
 Functions here are used for setting/verifying config options.
 Most work like so:
@@ -11,60 +13,51 @@ Some functions, eg setCardsToDealAndNumberOfDecks, may have additional logic to 
 
 
 //Returns useWildcard option.
-export function setWildcardOption(config, useJoker){
+export function setWildcardOption(config: GameConfig, useJoker: boolean|undefined){
     let setUseJoker;
-    if (useJoker===undefined){
-        if (config.useJoker!==false || config.useJoker!==true) setUseJoker = true;
-        else setUseJoker = config.useJoker;
-    }
+    if (useJoker===undefined) setUseJoker = config.useJoker;
     else setUseJoker = useJoker;
     return setUseJoker;
 }
 
 //Returns useJoker option.
-export function setJokerOption(config, useWildcard){
+export function setJokerOption(config: GameConfig, useWildcard: boolean|undefined){
     let setUseWildcard;
-    if (useWildcard===undefined){
-        if (config.useWildcard!==false || config.useWildcard!==true) setUseWildcard = true;
-        else setUseWildcard = config.useWildcard;
-    }
+    if (useWildcard===undefined) setUseWildcard = config.useWildcard;
     else setUseWildcard = useWildcard;
     return setUseWildcard;
 }
 
 //Returns cardsToDraw option.
-export function setCardsToDraw(config, cardsToDraw){
+export function setCardsToDraw(config: GameConfig, cardsToDraw: number|undefined){
     let setCardsToDraw;
-    if (!cardsToDraw){
-        if (!config.cardsToDraw) setCardsToDraw = 1;
-        else setCardsToDraw = config.cardsToDraw;
-    }
+    if (cardsToDraw===undefined) setCardsToDraw = config.cardsToDraw;
     else setCardsToDraw = cardsToDraw;
     return setCardsToDraw;
 }
 
 //Returns cardsToDrawDiscardPile option.
-export function setCardsToDrawDiscardPile(config, cardsToDrawDiscardPile){
+export function setCardsToDrawDiscardPile(config: GameConfig, cardsToDrawDiscardPile: number|"all"|undefined){
     let setCardsToDrawDiscardPile;
-    if (cardsToDrawDiscardPile===undefined){
-        if (!config.cardsToDrawDiscardPile) setCardsToDrawDiscardPile = 1;
-        else setCardsToDrawDiscardPile = config.cardsToDrawDiscardPile;
-    }
+    if (cardsToDrawDiscardPile===undefined) setCardsToDrawDiscardPile = config.cardsToDrawDiscardPile;
     else setCardsToDrawDiscardPile = cardsToDrawDiscardPile;
     return setCardsToDrawDiscardPile;
 }
-
 
 /*
 Returns cardsToDeal and numberOfDecks options.
 Checks to see if total cards drawn exceeds the total deck size; if so, overrides the specified options.
 Checks other numberOfDecks, if given one doesn't specify a cardsToDeal in the config.
 */
-export function setCardsToDealAndNumberOfDecks(config, playersSize, cardsToDeal, numberOfDecks){
+export function setCardsToDealAndNumberOfDecks(
+    config: GameConfig, 
+    playersSize: number, 
+    cardsToDeal: number|undefined, 
+    numberOfDecks: number|undefined){
     let setCardsToDeal, setNumberOfDecks;
 
-    //if specified values are valid, return them
-    if (cardsToDeal!==0 && playersSize*cardsToDeal < numberOfDecks*52){
+    //if specified values are defined and can be used, use them
+    if (numberOfDecks!==undefined && cardsToDeal!==undefined && cardsToDeal!==0 && playersSize*cardsToDeal < numberOfDecks*52){
         return [cardsToDeal, numberOfDecks];
     }
 

@@ -1,7 +1,7 @@
 import { Game } from '../Game/Game';
 
 type argList = {
-    [argName: string]: string|number
+    [argName: string]: string|number|string[]|number[]
 }
 
 type LogObject = {

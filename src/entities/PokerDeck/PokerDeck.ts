@@ -94,7 +94,7 @@ export class PokerDeck extends Deck{
 
     /**  Puts the discard pile back onto the top of the deck. */
     resetDiscardPile(){
-        let allDiscardedCards = this.drawFromDiscardPile(this._discardPile.remaining());
-        if (allDiscardedCards != false) this.addToTop(allDiscardedCards);
+        let allDiscardedCards = this.drawFromDiscardPile(this.getDiscardPileSize());
+        this.addToTop(allDiscardedCards);
     }
 }
