@@ -24,7 +24,7 @@ export class GameScore{
      * Creates a GameScore. Initializes scores to -1.
      * @constructor
      */
-    constructor(game){
+    constructor(game: Game){
         this.game = game;
         this.scores = {};
     }

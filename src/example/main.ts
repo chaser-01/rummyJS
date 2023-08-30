@@ -25,16 +25,25 @@ async function main(){
     game.nextRound();
 
     //main game loop
-    while (game.gameStatus != game.GameStatus.END_GAME){
-        while (game.gameStatus != game.GameStatus.ROUND_ENDED && game.gameStatus != game.GameStatus.END_GAME){
-            if (game.gameStatus == game.GameStatus.PLAYER_TURN) await playerTurn(game);
-            game.nextPlayer();
-            if (game.gameStatus == game.GameStatus.PLAYER_TO_DRAW) await playerDraw(game);
+    while (game.gameStatus !== "END_GAME") {
+        while (true) { // Infinite loop for player actions within a round
+            if (game.gameStatus === "PLAYER_TURN") {
+                await playerTurn(game);
+                game.nextPlayer();
+            } else if (game.gameStatus === "PLAYER_TO_DRAW") {
+                await playerDraw(game);
+            } else if (game.gameStatus === "PLAYER_TURN_ENDED") {
+                // Possibly do something for the end of a player's turn
+            } else if (game.gameStatus === "ROUND_ENDED" || game.gameStatus === "END_GAME") {
+                break; // Break inner loop when round ends or game ends
+            }
         }
-        console.log('Round has ended! Score: ');
-        game.nextRound();
+    
+        if (game.gameStatus === "ROUND_ENDED") {
+            console.log('Round has ended! Score: ');
+            game.nextRound();
         }
-    console.log('Game has ended. Thanks for playing!');
+    }
 }
 
 
