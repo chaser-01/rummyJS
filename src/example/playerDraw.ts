@@ -1,6 +1,8 @@
-import { getInput } from "./auxiliary/getInput.js";
+import { getInput } from "./auxiliary/getInput";
+import { Game } from "../entities/Game/Game";
 
-export async function playerDraw(game){
+/** Lets player choose to draw from deck or discard pile. */
+export async function playerDraw(game: Game){
     let gameInfo = game.getGameInfoForPlayer();
     let option = -1;
     while (option == -1){
@@ -10,8 +12,8 @@ export async function playerDraw(game){
         Draw:
             1. ${game.cardsToDraw} cards from deck
             2. ${game.cardsToDrawDiscardPile} cards from discard pile (Top card: ${gameInfo.topDiscardCard})
-    `, input => {
-        input = parseInt(input);
+    `, x => {
+        let input = parseInt(x);
         if (isNaN(input) || (input!=1 && input!=2)){
             console.log('Invalid input. Try again.');
             return -1;

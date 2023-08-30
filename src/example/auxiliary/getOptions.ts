@@ -1,8 +1,9 @@
-import { getInput } from "./getInput.js";
+import { getInput } from "./getInput";
+import { GameOptions } from "../../entities/Game/extraTypes";
 
 //gets options for the game
-export async function getOptions() {
-    const options = {};
+export async function getOptions(): Promise<[string[], GameOptions]> {
+    const options: GameOptions = {};
     
     let players = await getInput("Enter the number of players (2-7, default: 2): ", (input) => {
         const numPlayers = parseInt(input);

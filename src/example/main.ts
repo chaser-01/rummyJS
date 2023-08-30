@@ -1,7 +1,7 @@
-import { Game } from "../entities/Game/Game.js";
-import { getOptions } from "./auxiliary/getOptions.js";
-import { playerTurn } from "./playerTurn.js";
-import { playerDraw } from "./playerDraw.js";
+import { Game } from "../entities/Game/Game";
+import { getOptions } from "./auxiliary/getOptions";
+import { playerTurn } from "./playerTurn";
+import { playerDraw } from "./playerDraw";
 
 
 
@@ -9,7 +9,7 @@ async function main(){
     //get options and create game
     let players, options;
     [players, options] = await getOptions();
-    let playerIds = Array.from(Array(players), (_, index) => index);
+    let playerIds = Array.from(Array(players), (_, index) => `${index}`);
     let game = new Game(playerIds, options);
 
     console.log(`

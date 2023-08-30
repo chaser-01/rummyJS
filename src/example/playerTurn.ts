@@ -1,8 +1,9 @@
-import { getInput } from "./auxiliary/getInput.js";
-import { printGameInfo } from "./auxiliary/printGameInfo.js";
-import { sortPlayerHand, createMeld, addToMeld, replaceMeldCard, endTurn } from "./playerTurnActions.js";
+import { getInput } from "./auxiliary/getInput";
+import { printGameInfo } from "./auxiliary/printGameInfo";
+import { sortPlayerHand, createMeld, addToMeld, replaceMeldCard, endTurn, quitPlayer } from "./playerTurnActions";
+import { Game } from "../entities/Game/Game";
 
-export async function playerTurn(game){
+export async function playerTurn(game: Game){
     printGameInfo(game);
     
     while (game.gameStatus == game.GameStatus.PLAYER_TURN){
@@ -16,12 +17,13 @@ export async function playerTurn(game){
                 5: End turn
                 6: Quit
     
-                Input: `, input => {
-            if (isNaN(parseInt(input)) || input<0 || input>5) {
+                Input: `, x => {
+            let input = parseInt(x);
+            if (isNaN(input) || input<0 || input>5) {
                 console.log('Invalid input; please try again.');
                 return -1;
             }   
-            return parseInt(input);
+            return input;
         });
     
         switch(playerOption){
@@ -65,5 +67,4 @@ export async function playerTurn(game){
                 break;
         }
     }
-    console.log(`currentstatus: ${game.gameStatus.description}`)
 }

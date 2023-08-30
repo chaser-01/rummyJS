@@ -1,5 +1,7 @@
+import { Game } from "../../entities/Game/Game";
+
 //print game info
-export function printGameInfo(game){
+export function printGameInfo(game: Game){
     let gameInfo = game.getGameInfoForPlayer();
     console.log('-----');
     console.log(`Joker: ${gameInfo.jokerNumber}`);
