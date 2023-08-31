@@ -1,6 +1,6 @@
-import { suits, numbers } from './suitsNumbers.js';
-import { Card } from './Card.js';
-import { Deck } from './Deck.js';
+import { suits, numbers } from './suitsNumbers';
+import { Card } from './Card';
+import { Deck } from './Deck';
 
 
 
@@ -8,7 +8,7 @@ import { Deck } from './Deck.js';
  * Represents a poker deck.
  * Automatically populates the deck with poker cards, and has additional discardPile property of type Deck.
  */
-export class PokerDeck extends Deck{
+export class PokerDeck extends Deck<Card>{
     /// Properties /// 
 
 
@@ -19,7 +19,7 @@ export class PokerDeck extends Deck{
     numbers = numbers;
 
     /** The deck's discard pile. */
-    private _discardPile: Deck;
+    private _discardPile: Deck<Card>;
 
 
     /// Methods ///
@@ -28,28 +28,27 @@ export class PokerDeck extends Deck{
     /**
      * Creates a PokerDeck by iterating over all possible suits and numbers.
      * @constructor
-     * @param numberOfDecks - Number of full poker decks to populate the deck with
-     * @param useJoker - Whether to add 'numberOfDecks' * printed jokers to the deck
      */
     constructor(numberOfDecks=1, useJoker=false) {
         const cards: Card[] = [];
 
-        //skip Joker index if useJoker is false
-        let x = useJoker ? 0 : 1;
-        let y = useJoker ? 0 : 1;
-
         //get keys for suits and numbers
-        let suitsKeys: (keyof typeof suits)[] = Object.keys(suits) as (keyof typeof suits)[];
-        let numbersKeys: (keyof typeof numbers)[] = Object.keys(numbers) as (keyof typeof numbers)[];
+        let suitsKeys = Object.keys(suits) as (keyof typeof suits)[];
+        let numbersKeys = Object.keys(numbers) as (keyof typeof numbers)[];
 
         //iterate over all suits and numbers
-        for (; x<suitsKeys.length; x++) {
-            for (; y<numbersKeys.length; y++) {
-                for (let i=0; i<numberOfDecks; i++){
+        for (let i=0; i<numberOfDecks; i++){
+            for (let x = 1; x<suitsKeys.length; x++) {
+                for (let y = 1; y<numbersKeys.length; y++) {
+                    console.log(`${suitsKeys[x]}, ${numbersKeys[y]}`)
                     cards.push(new Card(suitsKeys[x], numbersKeys[y]));
                 }
             }
+            if (useJoker) cards.push(new Card('Joker', 'Joker'));
         }
+
+        
+
         super(cards);
         this._discardPile = new Deck();
     }

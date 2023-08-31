@@ -1,19 +1,19 @@
 import { Card } from "./Card.js";
 
-/**  Represents a generic deck (an array with some generic deck functionality). */
-export class Deck{
+/**  Generic deck (an array with some generic deck functionality). */
+export class Deck<T>{
     /// Properties ///
 
 
     /** The card stack. */
-    private _stack: Card[];
+    private _stack: T[];
 
 
     /// Methods ///
 
     
     /** Creates a Deck. */
-    constructor(cards: Card[] = []){
+    constructor(cards: T[] = []){
         if (!Array.isArray(cards)) this._stack = [];
         else this._stack = cards;
         return this;
@@ -21,7 +21,7 @@ export class Deck{
 
 
     /** Returns the deck cards. */
-    getCards(): Card[]{
+    getCards(): T[]{
         return [...this._stack];
     }
 
@@ -52,7 +52,7 @@ export class Deck{
     
     
     /** Draws specified amount of cards from top of the deck. */
-    draw(count: number): Card[]{
+    draw(count: number): T[]{
         if (!count) return [];
         let drawnCards = this._stack.splice(this._stack.length-count, count);
         return drawnCards;
@@ -60,7 +60,7 @@ export class Deck{
 
 
     /** Adds cards (or 1 card) to the top of the deck. */
-    addToTop(cards: Card[]){
+    addToTop(cards: T[]){
         this._stack.push(...cards); 
     }
 }

@@ -1,4 +1,4 @@
-import { suits, numbers, suitNumberValue, suitsText } from './suitsNumbers';
+import { suits, numbers, suitsText, numbersText } from './suitsNumbers';
 
 /** Represents a poker card. */
 export class Card {
@@ -19,25 +19,26 @@ export class Card {
      * @constructor
      */
     constructor(suit: keyof typeof suits, number: keyof typeof numbers) {
+        //Only allow Jokers to have suit and number = 'Joker'
+        //Looping over suits and numbers WILL throw error if you don't account for this!!!
+        if ((suit=='Joker' && number!='Joker') || (suit!='Joker' && number=='Joker')){
+            throw new Error(`Cannot instantiate a Joker if both suit and number aren't "Joker".`);
+        }
+
         this.suit = suit;
         this.number = number;
     }
 
 
-    /**
-     * Returns the value of a card's number only (typically for Rummy score calculation).
-     */
+    /** Returns the value of a card's number only (typically for Rummy score calculation). */
     cardNumberValue(): number{
-        let [, numberValue] = suitNumberValue(this.suit, this.number);
-        return numberValue;
+        return numbers[this.number];
     }
 
 
     /**  Returns the value of a card, prioritising suit THEN number. */
     cardValueSuitFirst(): number{
-        let suitValue, numberValue;
-        [suitValue, numberValue] = suitNumberValue(this.suit, this.number);
-        return suitValue*100 + numberValue;
+        return suits[this.suit]*100 + numbers[this.number];
     }
 
 
@@ -49,9 +50,7 @@ export class Card {
 
     /** Returns the value of a card, prioritising number THEN suit. */
     cardValueNumberFirst(): number{
-        let suitValue, numberValue;
-        [suitValue, numberValue] = suitNumberValue(this.suit, this.number);
-        return numberValue*100 + suitValue;
+        return numbers[this.number]*100 + suits[this.suit];
     }
 
     /**  Used as a callback function for sorting an array of cards, prioritising number (more commonly used). */
@@ -65,7 +64,6 @@ export class Card {
      * @override
      */
     toString(): string{
-        if (this.number=='Joker') return 'Joker';
-        return `${suitsText[this.suit]}${this.number}`;
+        return `${suitsText[this.suit]}${numbersText[this.number]}`;
     }
 }
