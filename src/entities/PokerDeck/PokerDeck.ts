@@ -1,6 +1,6 @@
-import { suits, numbers } from './suitsNumbers.js';
-import { Card } from './Card.js';
-import { Deck } from './Deck.js';
+import { suits, numbers } from './suitsNumbers';
+import { Card } from './Card';
+import { Deck } from './Deck';
 
 
 
@@ -8,7 +8,7 @@ import { Deck } from './Deck.js';
  * Represents a poker deck.
  * Automatically populates the deck with poker cards, and has additional discardPile property of type Deck.
  */
-export class PokerDeck extends Deck{
+export class PokerDeck extends Deck<Card>{
     /// Properties /// 
 
 
@@ -19,7 +19,7 @@ export class PokerDeck extends Deck{
     numbers = numbers;
 
     /** The deck's discard pile. */
-    private _discardPile: Deck;
+    private _discardPile: Deck<Card>;
 
 
     /// Methods ///
@@ -37,23 +37,17 @@ export class PokerDeck extends Deck{
         let numbersKeys = Object.keys(numbers) as (keyof typeof numbers)[];
 
         //iterate over all suits and numbers
-        for (let x = 1; x<suitsKeys.length; x++) {
-            for (let y = 1; y<numbersKeys.length; y++) {
-                for (let i=0; i<numberOfDecks; i++){
+        for (let i=0; i<numberOfDecks; i++){
+            for (let x = 1; x<suitsKeys.length; x++) {
+                for (let y = 1; y<numbersKeys.length; y++) {
+                    console.log(`${suitsKeys[x]}, ${numbersKeys[y]}`)
                     cards.push(new Card(suitsKeys[x], numbersKeys[y]));
                 }
             }
+            if (useJoker) cards.push(new Card('Joker', 'Joker'));
         }
 
-        if (useJoker) cards.push(new Card('Joker', 'Joker'));
-
-        //multiply by number of decks
-        if (numberOfDecks>1){
-            for (let i=1; i<numberOfDecks; i++){
-                let copy = [...cards];
-                cards.push(...copy);
-            }
-        }
+        
 
         super(cards);
         this._discardPile = new Deck();
