@@ -2,7 +2,6 @@ import { Card } from "./Card";
 import { suits, numbers } from "./suitsNumbers";
 
 describe('Card', () => {
-    //instantiation
     test('should instantiate', () => {
         const card = new Card("Hearts", "Ten");
         expect(card.suit).toBe("Hearts");
@@ -13,19 +12,17 @@ describe('Card', () => {
         expect(() => new Card("Joker", "Ace")).toThrow();
     })
 
-    //number value
     test('should have a number-only value', () => {
         let card = new Card("Hearts", "Ten");
         expect(card.cardNumberValue()).toBe(10);
     })
 
-    //suit THEN number value + comparison
     test('should have a relative value, prioritizing suit THEN number', () => {
         let card = new Card("Hearts", "Ace");
         expect(card.cardValueSuitFirst()).toBe(101);
     })
 
-    test('should implement comparisons by suit THEN number correctly', () => {
+    test('should compare by suit THEN number correctly', () => {
         let suitsKeys = Object.keys(suits);
         let numberKeys = Object.keys(numbers);
 
@@ -39,18 +36,16 @@ describe('Card', () => {
         ]
 
         for (let i=1; i<cardArr.length; i++){
-            console.log()
             expect(cardArr[i].cardValueSuitFirst() > cardArr[i-1].cardValueSuitFirst()).toBeTruthy();
         }
     })
 
-    //number then suit value + comparison
     test('should have a relative value, prioritizing number THEN suit', () => {
         let card = new Card("Hearts", "Ace");
         expect(card.cardValueNumberFirst()).toBe(101);
     })
 
-    test('should implement comparisons by number THEN suit correctly', () => {
+    test('should compare by number THEN suit correctly', () => {
         //decreasing suits but increasing number
         let cardArr: Card[] = [
             new Card("Joker", "Joker"),
@@ -65,8 +60,7 @@ describe('Card', () => {
         }
     })
 
-    //string representation
-    test('should have correct string representation', () => {
+    test('should have a correct string representation', () => {
         let card = new Card("Hearts", "Two");
         expect(`${card}`).toEqual('♥2');
     })
