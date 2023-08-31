@@ -28,28 +28,33 @@ export class PokerDeck extends Deck{
     /**
      * Creates a PokerDeck by iterating over all possible suits and numbers.
      * @constructor
-     * @param numberOfDecks - Number of full poker decks to populate the deck with
-     * @param useJoker - Whether to add 'numberOfDecks' * printed jokers to the deck
      */
     constructor(numberOfDecks=1, useJoker=false) {
         const cards: Card[] = [];
 
-        //skip Joker index if useJoker is false
-        let x = useJoker ? 0 : 1;
-        let y = useJoker ? 0 : 1;
-
         //get keys for suits and numbers
-        let suitsKeys: (keyof typeof suits)[] = Object.keys(suits) as (keyof typeof suits)[];
-        let numbersKeys: (keyof typeof numbers)[] = Object.keys(numbers) as (keyof typeof numbers)[];
+        let suitsKeys = Object.keys(suits) as (keyof typeof suits)[];
+        let numbersKeys = Object.keys(numbers) as (keyof typeof numbers)[];
 
         //iterate over all suits and numbers
-        for (; x<suitsKeys.length; x++) {
-            for (; y<numbersKeys.length; y++) {
+        for (let x = 1; x<suitsKeys.length; x++) {
+            for (let y = 1; y<numbersKeys.length; y++) {
                 for (let i=0; i<numberOfDecks; i++){
                     cards.push(new Card(suitsKeys[x], numbersKeys[y]));
                 }
             }
         }
+
+        if (useJoker) cards.push(new Card('Joker', 'Joker'));
+
+        //multiply by number of decks
+        if (numberOfDecks>1){
+            for (let i=1; i<numberOfDecks; i++){
+                let copy = [...cards];
+                cards.push(...copy);
+            }
+        }
+
         super(cards);
         this._discardPile = new Deck();
     }
