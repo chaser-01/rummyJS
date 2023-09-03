@@ -14,10 +14,7 @@ export class Card {
     /// Methods ///
 
 
-    /**
-     * Creates a Card.
-     * @constructor
-     */
+    /** Creates a Card. */
     constructor(suit: keyof typeof suits, number: keyof typeof numbers) {
         //Only allow Jokers to have suit and number = 'Joker'
         //Looping over suits and numbers WILL throw error if you don't account for this!!!

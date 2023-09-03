@@ -25,22 +25,19 @@ export class PokerDeck extends Deck<Card>{
     /// Methods ///
     
 
-    /**
-     * Creates a PokerDeck by iterating over all possible suits and numbers.
-     * @constructor
-     */
+    /** Creates a PokerDeck by iterating over all possible suits and numbers. */
     constructor(numberOfDecks=1, useJoker=false) {
         const cards: Card[] = [];
 
         //get keys for suits and numbers
-        let suitsKeys = Object.keys(suits) as (keyof typeof suits)[];
-        let numbersKeys = Object.keys(numbers) as (keyof typeof numbers)[];
-
+        //Note: have to do this filter cuz TS enums are kinda funky lol
+        let suitsKeys = Object.keys(suits).filter(key => isNaN(Number(key))) as (keyof typeof suits)[];
+        let numbersKeys = Object.keys(numbers).filter(key => isNaN(Number(key))) as (keyof typeof numbers)[];
+        
         //iterate over all suits and numbers
         for (let i=0; i<numberOfDecks; i++){
             for (let x = 1; x<suitsKeys.length; x++) {
                 for (let y = 1; y<numbersKeys.length; y++) {
-                    console.log(`${suitsKeys[x]}, ${numbersKeys[y]}`)
                     cards.push(new Card(suitsKeys[x], numbersKeys[y]));
                 }
             }

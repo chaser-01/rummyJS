@@ -9,15 +9,15 @@ export class Player{
     /// Properties ///
 
     /** Game that this player belongs to. */
-    game: Game;
+    protected _game: Game;
     /** Unique ID of the player. */
-    id: string;
+    protected _id: string;
     /** The player's hand. */
-    hand: Card[];
+    protected _hand: Card[];
     /** The player's melds. */
-    melds: Meld[];
+    protected _melds: Meld[];
     /** Whether the player is currently playing. */
-    playing: boolean;
+    protected _playing: boolean;
 
 
     /// Methods ///
@@ -25,19 +25,26 @@ export class Player{
 
     /** Creates a Player. */
     constructor(game: Game, id: string){
-        this.game = game;
-        this.id = id;
-        this.hand = [];
-        this.melds = [];
-        this.playing = true;
+        this._game = game;
+        this._id = id;
+        this._hand = [];
+        this._melds = [];
+        this._playing = true;
     }
+
+    //getters/setters
+    get game() {return this._game;}
+    get id() {return this._id;}
+    get hand() {return this._hand;}
+    get melds() {return this._melds;}
+    get playing() {return this._playing;}
     
     /** Adds a card to the player's hand. */
-    addToHand(cards: Card[]) {this.hand = this.hand.concat(cards);}
+    addToHand(cards: Card[]) {this._hand = this._hand.concat(cards);}
 
     /** Adds a meld to the player's melds. */
-    addMeld(meld) {this.melds.push(meld);}
+    addMeld(meld: Meld) {this._melds.push(meld);}
 
     /** Resets the players cards. */
-    resetCards() {this.hand = []; this.melds = [];}
+    resetCards() {this._hand = []; this._melds = [];}
 }

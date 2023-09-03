@@ -1,3 +1,5 @@
+//Enums for poker suits and numbers (and their relative values), and string representations
+
 /** Describes possible poker suits and their relative values. */
 export enum suits {
     Joker=0,
@@ -37,8 +39,8 @@ export enum suitsText {
 /** Describes possible poker numbers and their relative values. */
 export enum numbersText {
   Joker='Joker',
-  Ace=1,
-  Two,
+  Ace='A',
+  Two=2,
   Three,
   Four,
   Five,
@@ -47,7 +49,7 @@ export enum numbersText {
   Eight,
   Nine,
   Ten,
-  Jack,
-  Queen,
-  King
+  Jack='J',
+  Queen='Q',
+  King='K'
 }
