@@ -17,7 +17,7 @@ export class Player{
     /** The player's melds. */
     protected _melds: Meld[];
     /** Whether the player is currently playing. */
-    protected _playing: boolean;
+    public playing: boolean;
 
 
     /// Methods ///
@@ -29,22 +29,37 @@ export class Player{
         this._id = id;
         this._hand = [];
         this._melds = [];
-        this._playing = true;
+        this.playing = true;
     }
 
-    //getters/setters
+    //any required getters/setters
     get game() {return this._game;}
     get id() {return this._id;}
     get hand() {return this._hand;}
     get melds() {return this._melds;}
-    get playing() {return this._playing;}
     
-    /** Adds a card to the player's hand. */
+
+    /** Adds an array of cards to the player's hand. */
     addToHand(cards: Card[]) {this._hand = this._hand.concat(cards);}
+
+
+    /** Draws cards, as specified by an array of indexes, from the player's hand. */
+    drawFromHand(indexes: number[]) {
+        indexes.sort((a,b) => b-a);
+        let cards: Card[] = [];
+        this._hand = this._hand.filter((val, index) => {
+            let presentInIndexes = indexes.indexOf(index);
+            if (presentInIndexes==-1) cards.push(val);
+            return (presentInIndexes==-1);
+        })
+        return cards;
+    }
+
 
     /** Adds a meld to the player's melds. */
     addMeld(meld: Meld) {this._melds.push(meld);}
 
+    
     /** Resets the players cards. */
     resetCards() {this._hand = []; this._melds = [];}
 }

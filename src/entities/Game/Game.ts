@@ -503,47 +503,38 @@ export class Game {
 
 
     /** Attempts to create a meld out of chosen cards in the current player's hand. */
-    public createMeld(indexArray: number[]){
+    public createMeld(indexArr: number[]){
         if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN)) return false;
 
-        //create set so indexes are all unique
-        let indexSet = new Set(indexArray);
+        //ensure all indexes are all unique
+        let uniqueIndexArr = Array.from(new Set(indexArr));
 
         //get copy of player's hand, to copy back if meld is invalid
-        let playerHandCopy = this._players[this._currentPlayerIndex].hand.slice();
+        let playerHand = this._players[this._currentPlayerIndex].hand;
 
         //check if each index is valid, then add the corresponding card to meldCards
         let meldCards = [];
-        for (const index of indexSet){
-            if (isNaN(index) || index>this._players[this._currentPlayerIndex].hand.length){
-                this._logger.logWarning('createMeld', this._players[this._currentPlayerIndex].id, {indexArray}, 'Invalid index array');
-                this._players[this._currentPlayerIndex].hand = playerHandCopy;
+        for (const index of uniqueIndexArr){
+            if (index < this._players[this._currentPlayerIndex].hand.length){
+                this._logger.logWarning('createMeld', this._players[this._currentPlayerIndex].id, {uniqueIndexArr}, 'Invalid index array');
                 return false;
             }
-            meldCards.push(...this._players[this._currentPlayerIndex].hand.slice(index, index+1)); 
-        }
-        
-        //then search and remove the cards from the hand 
-        //if this is done while getting cards, card indexes in indexArray become invalid due to changing hand size
-        for (const meldCard of meldCards){
-            this._players[this._currentPlayerIndex].hand = this._players[this._currentPlayerIndex].hand.filter(card =>{
-                return !(card.suit==meldCard.suit && card.number==meldCard.number);
-            })
+            else meldCards.push(playerHand[index]);
         }
 
-        //if meld is valid, create the Meld object and add it to player's melds; else, reset the player's hand
+        //if meld is valid, create the Meld object and add it to player's melds + draw the cards from player's hand 
         if (validateAndSortMeld(meldCards, this._jokerNumber)){
             let newMeld = new Meld(meldCards, this._jokerNumber);
             this._players[this._currentPlayerIndex].addMeld(newMeld);
-            this._logger.logGameAction('createMeld', this._players[this._currentPlayerIndex].id, {indexArray});
+            this._players[this._currentPlayerIndex].drawFromHand(uniqueIndexArr)
+            this._logger.logGameAction('createMeld', this._players[this._currentPlayerIndex].id, {uniqueIndexArr});
             return true;
         }
-    
+
+        //else, call the forfeit function and return false 
         else{
             this.invalidMeldDeclaration();
-            this._logger.logWarning('createMeld', this._players[this._currentPlayerIndex].id, {indexArray}, 'Invalid meld');
-            this.invalidMeldDeclaration();
-            this._players[this._currentPlayerIndex].hand = playerHandCopy;
+            this._logger.logWarning('createMeld', this._players[this._currentPlayerIndex].id, {uniqueIndexArr}, 'Invalid meld');
             return false;
         }
     }
