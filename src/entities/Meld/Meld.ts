@@ -20,7 +20,7 @@ export class Meld {
     /** Creates a Meld. */
     constructor(cards: Card[], jokerNumber: (keyof typeof numbers|false)=false, maxSetSize=4){
         if (validateAndSortMeld(cards, jokerNumber, maxSetSize)){
-            this._cards = cards;
+            this._cards = [...cards];
         }
         else{
             this._cards = [];
@@ -82,8 +82,9 @@ export class Meld {
    replaceAnyJoker(newCard: Card): Card|false{
         for (let i=0; i<this._cards.length; i++){
             if (this._cards[i].number == this.jokerNumber){
-                if (this.checkAndSortMeld([...this._cards].splice(i, 1, newCard), this.jokerNumber, this.maxSetSize)){
-                    let replacedCard = this._cards.splice(i, 1, newCard)[0];
+                let modifiedCards = [...this._cards];
+                let replacedCard = modifiedCards.splice(i, 1, newCard)[0];
+                if (this.checkAndSortMeld(modifiedCards, this.jokerNumber, this.maxSetSize)){
                     return replacedCard;
                 }
             }

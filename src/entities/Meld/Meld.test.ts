@@ -262,7 +262,7 @@ describe('Meld', () => {
 
 
     describe('card replacement (with specific index)', () => {
-        let cards = [
+        let testCards = [
             new Card("Hearts", "Ace"),
             new Card("Joker", "Joker"),
             new Card("Hearts", "Three")
@@ -270,14 +270,19 @@ describe('Meld', () => {
 
         describe('should be successful', () => {
             test('if replacing card and index is valid', () => {
+                let cards = [...testCards];
                 let meld = new Meld(cards, "Joker");
                 let replacingCard = new Card("Hearts", "Two");
                 meld.replaceCard(replacingCard, 1);
-                expect(meld.cards).toEqual([...cards.splice(1, 1, replacingCard)]);
+
+                let expectedCards = [...cards];
+                expectedCards.splice(1, 1, replacingCard);
+                expect(meld.cards).toEqual(expectedCards);
             })
 
-            test('should return the replaced card', () => {
-                let meld = new Meld(cards, "Joker");
+            test('and return the replaced card', () => {
+                let cards = [...testCards];
+                let meld = new Meld(cards, "Joker");    
                 let replacingCard = new Card("Hearts", "Two");
                 expect(meld.replaceCard(replacingCard, 1)).toEqual(cards[1]);
             })
@@ -285,12 +290,14 @@ describe('Meld', () => {
 
         describe('should be unsuccessful', () => {
             test('if replacing card is invalid', () => {
+                let cards = [...testCards];
                 let meld = new Meld(cards, "Joker");
                 let replacingCard = new Card("Spades", "Two"); //wrong suit
                 expect(meld.replaceCard(replacingCard, 1)).toEqual(false);
             })
 
             test('if replacing card is valid, but specified index is invalid', () => {
+                let cards = [...testCards];
                 let meld = new Meld(cards, "Joker");
                 let replacingCard = new Card("Hearts", "Two");
                 expect(meld.replaceCard(replacingCard, 0)).toEqual(false);

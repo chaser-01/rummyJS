@@ -5,9 +5,9 @@ export class Card {
     /// Properties ///
 
     
-    /** The card's suit (must correspond to one in suits). */
+    /** The card's suit. */
     suit: keyof typeof suits;
-    /** The card's number (must correspond to one in numbers). */
+    /** The card's number. */
     number: keyof typeof numbers;
 
 

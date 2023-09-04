@@ -25,9 +25,7 @@ export function validateAndSortMeld(cards: Card[], jokerNumber: (keyof typeof nu
  */
 function checkForAndSortAsSequence(cards: Card[], jokerNumber: (keyof typeof numbers|false)=false) {
   //filter out jokers and sort the cards
-  let jokers: Card[] = [];
-  let sortedCards: Card[] = [];
-  if (jokerNumber!=false) [sortedCards, jokers] = filterJokers(cards, jokerNumber);
+  let [sortedCards, jokers] = filterJokers(cards, jokerNumber);
   sortedCards.sort(Card.compareCardsNumberFirst);
 
   let isValid = true;
@@ -64,7 +62,6 @@ function checkForAndSortAsSequence(cards: Card[], jokerNumber: (keyof typeof num
     cards = sortedCards;
     if (jokers.length>0) cards.push(...jokers);
   }
-
   return isValid;
 }
 
@@ -99,19 +96,19 @@ function checkForAndSortAsSet(cards: Card[], jokerNumber: (keyof typeof numbers|
 
 //Filters and counts jokers from an input array of cards, and returns joker count + filtered cards
 function filterJokers(cards: Card[], jokerNumber: (keyof typeof numbers|false)=false){
+  if (jokerNumber==false) return [cards, []];
+
   let jokers: Card[] = [];
   let jokerlessCards: Card[] = [];
 
-  if (jokerNumber!=false){
-    jokerlessCards = cards.filter(card => {
-      if (card.number==jokerNumber) {
-        jokers.push(card);
-        return false;
-      }
-      return true;
-    } 
-    )
-  }
+  jokerlessCards = cards.filter(card => {
+    if (card.number==jokerNumber) {
+      jokers.push(card);
+      return false;
+    }
+    return true;
+  } 
+  )
 
   jokerlessCards.sort(Card.compareCardsNumberFirst);
   return [jokerlessCards, jokers];
