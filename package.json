@@ -1,5 +1,5 @@
 {
-  "name": "rummyjs",
+  "name": "rummyts",
   "version": "1.0.0",
   "devDependencies": {
     "@types/jest": "^29.5.4",

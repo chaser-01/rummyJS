@@ -126,19 +126,13 @@ export class Game {
 
 
     
-    /** Loads a json config file for the game (must be located in same directory, and named same as the class 'title' property) */
-    private loadConfig(){
-        const __dirname = path.dirname(fileURLToPath(import.meta.url));
-        return this.loadVariantConfig(__dirname);
-    }
-
-
     /** 
-     * Calls the load function and assigns the correct type. 
-    */
-    protected loadVariantConfig(dir: string){
-        return loadConfigFile<GameConfig>(dir, this.title);
-    }
+     * Loads a json config file for the game (must be located in same directory, and named same as the class 'title' property.
+     * Variants with their own config objects should override this with the appropriate config type.
+     */
+    private loadConfig(){
+        return loadConfigFile<GameConfig>(__dirname, this.title);
+    }   
 
 
     /** 
