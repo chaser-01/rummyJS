@@ -87,7 +87,80 @@ describe('Player', () => {
             expect(player.melds).toEqual([meld]);
         })
 
-        
+        describe('addition to meld without specific index', () => {
+            let cards = [
+                new Card("Hearts", "Ace"),
+                new Card("Hearts", "Two"),
+                new Card("Hearts", "Three")
+            ]
+
+            test('should be successful if the addition is valid', () => {
+                let player = returnTestPlayer('1');
+                let meld = new Meld([...cards]);
+                player.addMeld(meld);
+                let card = new Card("Hearts", "Four");
+                expect(player.addCardToMeld(card, 0)).toEqual(true);
+                expect(player.melds[0].cards).toEqual([...cards, card]);
+            })
+            
+            test('should not be successful if the addition is invalid', () => {
+                let player = returnTestPlayer('1');
+                let meld = new Meld([...cards]);
+                player.addMeld(meld);
+                let card = new Card("Hearts", "Five");
+                expect(player.addCardToMeld(card, 0)).toEqual(false);
+                expect(player.melds[0].cards).toEqual(cards);
+            })
+        })
+
+
+        describe('addition to meld with specific index', () => {
+            let cards = [
+                new Card("Hearts", "Ace"),
+                new Card("Hearts", "Two"),
+                new Card("Hearts", "Three")
+            ]
+
+            test('should be successful if the addition is valid', () => {
+                let player = returnTestPlayer('1');
+                let meld = new Meld([...cards]);
+                player.addMeld(meld);
+                let card = new Card("Hearts", "Four");
+                expect(player.addCardToMeldSpecific(card, 0, 3)).toEqual(true);
+                expect(player.melds[0].cards).toEqual([...cards, card]);
+            })
+            
+            test('should not be successful if the addition is invalid', () => {
+                let player = returnTestPlayer('1');
+                let meld = new Meld([...cards]);
+                player.addMeld(meld);
+                let card = new Card("Hearts", "Five");
+                expect(player.addCardToMeldSpecific(card, 0, 3)).toEqual(false);
+                expect(player.melds[0].cards).toEqual(cards);
+            })
+        })
+
+
+        test('should be able to reset melds and hand', () => {
+            let player = returnTestPlayer('1');
+            let cards = [
+                new Card("Hearts", "Ace"),
+                new Card("Hearts", "Two"),
+                new Card("Hearts", "Three")
+            ]
+            let meld = new Meld(cards);
+            let card = new Card("Hearts", "Four");
+            player.addMeld(meld);
+            player.addToHand(card);
+
+            expect(player.hand).toEqual([card]);
+            expect(player.melds[0].cards).toEqual(cards);
+
+            player.resetCards();
+            
+            expect(player.hand).toEqual([]);
+            expect(player.melds).toEqual([]);
+        })
     })
     
 })

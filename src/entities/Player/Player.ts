@@ -68,9 +68,20 @@ export class Player{
     /** Attempts to add a card to a specified meld. */
     addCardToMeld(card: Card, meldIndex: number){
         let meld = this._melds[meldIndex];
-        if (meld){
-            meld.addCard(card)
+        if (meld) {
+            if (meld.addCard(card)) return true;
         }
+        return false;
+    }
+
+
+    /** Attempts to add a card to a specified meld at a specified position. */
+    addCardToMeldSpecific(card: Card, meldIndex: number, position: number){
+        let meld = this._melds[meldIndex];
+        if (meld) {
+            if (meld.addCardSpecific(card, position)) return true;
+        }
+        return false;
     }
 
     
