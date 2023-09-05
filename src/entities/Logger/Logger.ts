@@ -1,7 +1,7 @@
 import { Game } from '../Game/Game';
 
 type argList = {
-    [argName: string]: string|number|string[]|number[]
+    [argName: string]: string | number | string[] | number[]
 }
 
 type LogObject = {
@@ -29,10 +29,7 @@ export class Logger{
     /// Methods ///
 
 
-    /**
-     * Creates a Logger.
-     * @constructor
-     */
+    /** Creates a Logger. */
     constructor(game: Game){
         this.game = game;
         this.actionLog = {};

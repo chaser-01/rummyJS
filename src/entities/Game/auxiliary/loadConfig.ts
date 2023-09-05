@@ -13,7 +13,6 @@ export function loadConfigFile<ConfigFileType>(directory: string, title: string)
   }
   
   catch (error) {
-    console.log(`fuck u`, directory)
     if (typeof error == "string") console.error(`Error loading JSON file: ${error}`);
     else if (error instanceof Error) console.error(`Error loading JSON file: ${error.message}`);
     return {} as ConfigFileType;
