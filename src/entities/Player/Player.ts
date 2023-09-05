@@ -53,7 +53,7 @@ export class Player{
             let cards: Card[] = [];
             this._hand = this._hand.filter((val, index) => {
                 let presentInIndexes = indexes.indexOf(index);
-                if (presentInIndexes==-1) cards.push(val);
+                if (presentInIndexes!=-1) cards.push(val);
                 return (presentInIndexes==-1);
             })
             return cards;

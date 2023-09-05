@@ -27,7 +27,7 @@ describe('Player', () => {
     
             let card = new Card("Clubs", "Ace")
             player.addToHand(card);
-            expect(player.hand).toEqual(card);
+            expect(player.hand).toEqual([card]);
     
             let cards = [new Card("Clubs", "Three"), new Card("Clubs", "Two")];
             player.addToHand(cards);
@@ -42,7 +42,7 @@ describe('Player', () => {
                     new Card("Hearts", "Two"),
                     new Card("Hearts", "Three")
                 ]
-                player.addToHand(cards);
+                player.addToHand([...cards]);
                 player.drawFromHand([0, 1]);
                 expect(player.hand).toEqual([cards[2]]);
             })
@@ -54,8 +54,9 @@ describe('Player', () => {
                     new Card("Hearts", "Two"),
                     new Card("Hearts", "Three")
                 ]
-                player.addToHand(cards);
+                player.addToHand([...cards]);
                 expect(player.drawFromHand([0, 1])).toEqual([cards[0], cards[1]]);
+                expect(player.hand).toEqual([cards[2]]);
             })
     
             test('should not draw a card when the index is invalid (greater than hand size/less than 0)', () => {
@@ -65,8 +66,9 @@ describe('Player', () => {
                     new Card("Hearts", "Two"),
                     new Card("Hearts", "Three")
                 ]
-                player.addToHand(cards);
+                player.addToHand([...cards]);
                 expect(player.drawFromHand([-1, -2, 1])).toEqual([cards[1]]);
+                expect(player.hand).toEqual([cards[0], cards[2]])
             })
         })
     })
