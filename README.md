@@ -14,7 +14,7 @@ It's also extensible, as variants can be created by extending base classes as ne
 WIP
 
 ## Game flow
-The `gameStatus` property controls what actions can at a point in time in the game. Thus, one should compare it against possible states (defined as an enum in `GameStatus`), when tracking the game and determining what actions should be taken by the game/players. 
+The `gameStatus` property controls what actions can at a point in time in the game. Thus, one should compare it against possible states (defined in `GameStatus`), when tracking the game and determining what actions should be taken by the game/players. 
 
 Below are the defined states and their allowed actions:
 
