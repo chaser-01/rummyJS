@@ -1,10 +1,13 @@
-import { Card } from "../PokerDeck/Card";
-import { numbers } from "../PokerDeck/suitsNumbers";
+import { Card } from "../../PokerDeck/Card";
+import { numbers } from "../../PokerDeck/suitsNumbers";
 
 
 /*
-Auxiliary function for checking and sorting a meld.
-This isn't tested since it is directly (and only?) used in Meld anyway.
+This function checks an array of cards if it can form a valid meld.
+The cards are sorted into the valid meld in-place if they form one,
+so order in the array is irrelevant.
+
+To check for correct order as well, see validateMeldInGivenOrder.
 */
 
 

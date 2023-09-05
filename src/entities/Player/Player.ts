@@ -39,25 +39,39 @@ export class Player{
     get melds() {return this._melds;}
     
 
-    /** Adds an array of cards to the player's hand. */
-    addToHand(cards: Card[]) {this._hand = this._hand.concat(cards);}
+    /** Adds card(s) to the player's hand. */
+    addToHand(cards: Card[]|Card) {this._hand = this._hand.concat(cards);}
 
 
-    /** Draws cards, as specified by an array of indexes, from the player's hand. */
-    drawFromHand(indexes: number[]) {
-        indexes.sort((a,b) => b-a);
-        let cards: Card[] = [];
-        this._hand = this._hand.filter((val, index) => {
-            let presentInIndexes = indexes.indexOf(index);
-            if (presentInIndexes==-1) cards.push(val);
-            return (presentInIndexes==-1);
-        })
-        return cards;
+    /** Draws cards, as specified by index(es), from the player's hand. */
+    drawFromHand(indexes: number[]|number) {
+        if (typeof indexes == "number") {
+            return this._hand.splice(indexes, 1);
+        }
+        else {
+            indexes.sort((a,b) => b-a);
+            let cards: Card[] = [];
+            this._hand = this._hand.filter((val, index) => {
+                let presentInIndexes = indexes.indexOf(index);
+                if (presentInIndexes==-1) cards.push(val);
+                return (presentInIndexes==-1);
+            })
+            return cards;
+        }
     }
 
 
     /** Adds a meld to the player's melds. */
     addMeld(meld: Meld) {this._melds.push(meld);}
+
+
+    /** Attempts to add a card to a specified meld. */
+    addCardToMeld(card: Card, meldIndex: number){
+        let meld = this._melds[meldIndex];
+        if (meld){
+            meld.addCard(card)
+        }
+    }
 
     
     /** Resets the players cards. */

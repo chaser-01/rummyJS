@@ -218,7 +218,7 @@ describe('Meld', () => {
     });
 
 
-    describe('addition', () => {
+    describe('card addition (without specific index)', () => {
         let sequence = [
             new Card("Hearts", "Ace"),
             new Card("Hearts", "Two"),
@@ -227,20 +227,20 @@ describe('Meld', () => {
         
         test('should be successful if added card is valid', () => {
             let addedCard = new Card("Hearts", "Four");
-            let meld = new Meld(sequence);
+            let meld = new Meld([...sequence]);
             meld.addCard(addedCard);
             expect(meld.cards).toEqual(sequence.concat(addedCard));
         });
 
         test('should be successful if added card is joker/wildcard', () => {
             let wildcard = new Card("Spades", "King")
-            let meld = new Meld(sequence, "King");
+            let meld = new Meld([...sequence], "King");
             meld.addCard(wildcard);
             expect(meld.cards).toEqual(sequence.concat(wildcard));
         });
 
         test('should be unsuccessful if added card is invalid', () => {
-            let meld = new Meld(sequence);
+            let meld = new Meld([...sequence]);
             meld.addCard(new Card("Hearts", "Five"));
             expect(meld.cards).toEqual(sequence);
         });
@@ -259,6 +259,29 @@ describe('Meld', () => {
             expect(meld.cards).toEqual(set);
         })
     });
+
+
+    describe('card addition (with specific index)', () => {
+        let sequence = [
+            new Card("Hearts", "Ace"),
+            new Card("Hearts", "Two"),
+            new Card("Hearts", "Three")
+        ];
+
+        test('should be successful given valid card and position', () => {
+            let addedCard = new Card("Hearts", "Four");
+            let meld = new Meld(sequence);
+            expect(meld.addCardSpecific(addedCard, 3)).toEqual(true);
+            expect(meld.cards).toEqual([...sequence, addedCard]);
+        })
+
+        test('should be unsuccessful given a valid card but wrong position', () => {
+            let addedCard = new Card("Hearts", "Four");
+            let meld = new Meld(sequence);
+            expect(meld.addCardSpecific(addedCard, 1)).toEqual(false);
+            expect(meld.cards).toEqual(sequence);
+        })
+    })
 
 
     describe('card replacement (with specific index)', () => {
@@ -306,7 +329,7 @@ describe('Meld', () => {
     })
 
 
-    describe('card replacement (using `replaceAnyJoker`, ie with no index)', () => {
+    describe('card replacement (without specific index)', () => {
         test('should be successful if replacing card is valid at any place', () => {
             let cards = [
                 new Card("Hearts", "Ace"),

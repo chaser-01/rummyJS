@@ -10,7 +10,7 @@ import { Meld } from "../Meld/Meld";
 //some auxiliary functions
 import { loadConfigFile } from "./auxiliary/loadConfig";
 import { setCardsToDealAndNumberOfDecks, setCardsToDraw, setCardsToDrawDiscardPile, setJokerOption, setWildcardOption } from "./auxiliary/setGameOptions";
-import { validateAndSortMeld } from "../Meld/validateAndSortMeld"; 
+import { validateAndSortMeld } from "../Meld/auxiliary/validateAndSortMeld"; 
 
 //path functions, for getting config file regardless of variant location
 import * as path from 'path';

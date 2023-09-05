@@ -1,4 +1,5 @@
-import {validateAndSortMeld} from './validateAndSortMeld';
+import {validateAndSortMeld} from './auxiliary/validateAndSortMeld';
+import { validateMeldInGivenOrder } from './auxiliary/validateMeldInGivenOrder';
 import { Card } from '../PokerDeck/Card';
 import { numbers } from '../PokerDeck/suitsNumbers';
 
@@ -46,11 +47,44 @@ export class Meld {
     }
 
 
-    /** Verifies that a card can be added to the meld, and still form a valid meld. */
+    /**
+     * Validates an array of cards as a meld, in the given order.
+     * If the cards form a meld in a different order, still returns false.
+     * If no cards are passed in, operates on the instance's cards.
+     */
+    checkMeldInGivenOrder(cards: Card[] = this._cards, 
+        jokerNumber: (keyof typeof numbers|false) = this.jokerNumber, 
+        maxSetSize: number = this.maxSetSize){
+        return validateMeldInGivenOrder(cards, jokerNumber, maxSetSize);
+    }
+
+
+    /** 
+     * Attempts to add a card to the meld at the specified index. 
+     * If the cards form a meld in a different order, the meld will still not be successfully modified.
+    */
+    addCardSpecific(newCard: Card, newCardPosition: number){
+        let modifiedCards = [...this._cards];
+        modifiedCards.splice(newCardPosition, 0, newCard);
+        
+        if (validateMeldInGivenOrder(modifiedCards, this.jokerNumber, this.maxSetSize)){
+            this._cards = modifiedCards;
+            return true;
+        }
+        return false;
+    }
+
+    
+    /** 
+     * Attempts to add a card to the meld.
+     * Will automatically move the card to the correct position for a valid meld.
+    */
     addCard(newCard: Card){
-        let modifiedCards = [...this._cards].concat(newCard);
-        if (this.checkAndSortMeld(modifiedCards)){
-            this._cards = this._cards.concat(newCard);
+        let modifiedCards = [...this._cards];
+        modifiedCards.push(newCard);
+
+        if (this.checkAndSortMeld(modifiedCards, this.jokerNumber, this.maxSetSize)){
+            this._cards = modifiedCards;
             return true;
         }
         return false;
