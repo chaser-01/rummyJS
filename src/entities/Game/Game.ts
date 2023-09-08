@@ -7,17 +7,12 @@ import { PokerDeck } from "../PokerDeck/PokerDeck";
 import { Card } from "../PokerDeck/Card";
 import { Meld } from "../Meld/Meld";
 
-//some auxiliary functions
-import { loadConfigFile } from "./auxiliary/loadConfig";
-import { setCardsToDealAndNumberOfDecks, setCardsToDraw, setCardsToDrawDiscardPile, setJokerOption, setWildcardOption } from "./auxiliary/setGameOptions";
+//some utility functions
+import { GameInitialization } from "./GameInitialization";
 import { validateAndSortMeld } from "../Meld/auxiliary/validateAndSortMeld"; 
 
-//path functions, for getting config file regardless of variant location
-import * as path from 'path';
-import { fileURLToPath } from 'url';
-
 //import some useful types
-import { GameOptions, GameConfig, ExternalGameInfo } from "./auxiliary/extraTypes.js";
+import { GameOptions, ExternalGameInfo } from "./auxiliary/extraTypes.js";
 
 
 
@@ -31,65 +26,57 @@ export class Game {
     readonly title = "Rummy"; 
     /** An enum of possible game statuses. */
     readonly GameStatus = GameStatus.GameStatus;
-    /** Default configuration for the variant. */
-    protected _config: GameConfig;
+    /** Optional identifier for a game. */
+    readonly gameId: string;
 
-    //Options that can be changed by passing in GameOptions in the constructor.
-    protected _useWildcard: boolean;
-    protected _useJoker: boolean;
-    protected _cardsToDraw: number;
-    protected _cardsToDrawDiscardPile: number|"all";
-    protected _cardsToDeal: number;
-    protected _numberOfDecks: number;
+    //initialization object; useful if we need to re-initialize options at some point
+    protected gameInitialization: GameInitialization;
 
     //Used for game tracking
-    readonly gameId: string;
     protected _logger: Logger;
     protected _players: Player[];
     protected _quitPlayers: Player[];
-    protected _initialOptions: GameOptions;
     protected _score: GameScore;
     protected _currentPlayerIndex: number;
     protected _currentRound: number;
     protected _gameStatus: keyof typeof GameStatus.GameStatus;
 
-    //Game _deck related
+    //Game deck related
     protected _deck: PokerDeck;
     protected _jokerNumber: keyof typeof this._deck.numbers|false;
     protected _validationCards: Card[];
+    protected _cardsToDraw: number;
+    protected _cardsToDrawDiscardPile: number|"all";
+    protected _cardsToDeal: number;
 
 
     /// Methods ///     
 
 
     /**
-     * Creates a Game.
-     * Don't override this in variants as it may mess with initialization flow; instead, override individual functions as required.                    
+     * Creates a game.
+     * @param playerIds - Array of player's IDs
+     * @param options - Optional options to customize some aspects of the game
+     * @param gameId - Optional game ID
+     * @param gameInitialization - Optional initialization class; pass one in if you use custom initialization functionality
      */
-    constructor(playerIds: string[], options: GameOptions={}, gameId: string=''){
+    constructor(playerIds: string[], options: GameOptions={}, gameId: string='', gameInitialization = new GameInitialization(options)){
+        this.gameInitialization = gameInitialization;
+        this.gameInitialization.initializeOptions(this.title, playerIds.length);
+
         this.gameId = gameId;
-
-        this._config = this.loadConfig();
-        this._logger = new Logger(this);
-
-        this._players = this.initializePlayers(playerIds);
+        this._logger = this.gameInitialization.initializeLogger(this);
+        this._players = this.gameInitialization.initializePlayers(this, playerIds);
         this._quitPlayers = [];
-
-        this._initialOptions = options;
-
-        [this._useWildcard,
-        this._useJoker,
-        this._cardsToDraw,
-        this._cardsToDrawDiscardPile,
-        this._cardsToDeal,
-        this._numberOfDecks] = this.initializeOptions(options);
-
-        this._score = this.initializeScore();
+        this._score = gameInitialization.initializeScore(this);
         this._currentPlayerIndex = 0;
         this._currentRound = 0;
         this._gameStatus = this.GameStatus.ROUND_ENDED;
 
-        [this._deck, this._jokerNumber, this._validationCards] = this.initializeDeckJokerAndValidationCards();
+        [this._deck, this._jokerNumber, this._validationCards] = this.gameInitialization.initializeDeckJokerAndValidationCards();
+        this._cardsToDraw = options.cardsToDraw as number; //its OK since initializeOptions sets these to numbers
+        this._cardsToDrawDiscardPile = options.cardsToDrawDiscardPile as number;
+        this._cardsToDeal = options.cardsToDeal as number;
     }
 
 
@@ -99,14 +86,10 @@ export class Game {
 
 
 
-    get config() {return this._config;}
-    get useWildcard() {return this._useWildcard;}
-    get useJoker() {return this._useJoker;}
     get jokerNumber() {return this._jokerNumber;}
     get cardsToDraw() {return this._cardsToDraw;}
     get cardsToDrawDiscardPile() {return this._cardsToDrawDiscardPile;}
     get cardsToDeal() {return this._cardsToDeal;}
-    get numberOfDecks() {return this._numberOfDecks;}
 
     get logger() {return this._logger;}
     get players() {return this._players;}
@@ -117,90 +100,6 @@ export class Game {
     get gameStatus() {return this._gameStatus;}
     get deck() {return this._deck;}
     get validationCards() {return this._validationCards;}
-
-
-
-    ////////////////////////////////////////////////////////////////////////////
-    ///////////////////////// Initialization functions /////////////////////////
-    ////////////////////////////////////////////////////////////////////////////
-
-
-    
-    /** 
-     * Loads a json config file for the game (must be located in same directory, and named same as the class 'title' property.
-     * Variants with their own config objects should override this with the appropriate config type.
-     */
-    private loadConfig(){
-        return loadConfigFile<GameConfig>(__dirname, this.title);
-    }   
-
-
-    /** 
-     * Initializes options that determine some customizable game-specific stuff.
-     * Variants with their own options should override this, then super it.
-    */
-    protected initializeOptions(options: GameOptions): [boolean, boolean, number, number|"all", number, number]{
-        let _useWildcard = setWildcardOption(this._config, options.useWildcard);
-        let _useJoker = setJokerOption(this._config, options.useJoker);
-        let _cardsToDraw = setCardsToDraw(this._config, options.cardsToDraw);
-        let _cardsToDrawDiscardPile = setCardsToDrawDiscardPile(this._config, options.cardsToDrawDiscardPile);
-        let [_cardsToDeal, _numberOfDecks] = setCardsToDealAndNumberOfDecks(this._config, this._players.length, options.cardsToDeal, options.numberOfDecks);
-        if (this._useJoker && this._useWildcard) this._useWildcard = false;
-
-        return [
-            _useWildcard,
-            _useJoker,
-            _cardsToDraw,
-            _cardsToDrawDiscardPile,
-            _cardsToDeal,
-            _numberOfDecks
-        ]
-    }
-
-
-    /** Initializes an array of player objects. */
-    protected initializePlayers(playerIds: string[]){
-        let _players = [];
-        for (const playerId of playerIds){
-            _players.push(new Player(this, playerId));
-        }
-        return _players;
-    }
-
-
-    /** Initializes a score object which is used for tracking/calculating score for current round. */
-    protected initializeScore(){
-    return new GameScore(this);
-    }
-
-
-    /** Initializes deck, joker (printed/wildcard/none, depending on game configuration), and a copy of the deck for validation later. */
-    protected initializeDeckJokerAndValidationCards(): [PokerDeck, keyof typeof this._deck.numbers|false, Card[]]{
-        let _deck = new PokerDeck(this._numberOfDecks, this._useJoker);
-        let validationCards = _deck.getCards().slice().sort(Card.compareCardsSuitFirst);
-        _deck.shuffle();
-        
-        //wildcard number = (_currentRound+1)%(size of _deck numbers)
-        let _jokerNumber: keyof typeof this._deck.numbers|false;
-        if (this._useJoker) _jokerNumber = 'Joker';
-        else if (this._useWildcard) _jokerNumber = this.getWildcardNumber(_deck);
-        else _jokerNumber = false;
-
-        return [_deck, _jokerNumber, validationCards];
-    }
-
-
-    /**
-     * Get the current wildcard number if wildcards are enabled, upon start of each round.
-     * Variants may handle wildcards differently, so overriding this method may be useful.
-     * Currently, wildcard starts at 2 and increments on each round.
-     */
-    protected getWildcardNumber(_deck: PokerDeck){
-        if (this._useWildcard){
-            return _deck.numbers[this._currentRound+1 % Object.keys(_deck.numbers).length] as keyof typeof this._deck.numbers;
-        }
-        else return false;
-    }
 
 
 
@@ -322,11 +221,9 @@ export class Game {
             if (player.playing) this._players.push(...this._quitPlayers.splice(index, 1));
         }
         
-        //set game config again (particularly _cardsToDeal, if number of _players changed)
-        this.initializeOptions(this._initialOptions);
-
-        //reset _deck and get the next _jokerNumber
-        [this._deck, this._jokerNumber, this._validationCards] = this.initializeDeckJokerAndValidationCards();
+        //TO DO: some flag to set if any option was changed during a round
+        //and reinitialize stuff
+        //this.gameInitialization.initializeOptions(this.title, this._players.length);
         
         //deal cards
         for (const player of this._players){
