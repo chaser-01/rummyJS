@@ -74,6 +74,7 @@ export class Game {
         this._gameStatus = this.GameStatus.ROUND_ENDED;
 
         [this._deck, this._jokerNumber, this._validationCards] = this.gameInitialization.initializeDeckJokerAndValidationCards();
+        this._validationCards = this._deck.getCards().slice().sort()
         this._cardsToDraw = options.cardsToDraw as number; //its OK since initializeOptions sets these to numbers
         this._cardsToDrawDiscardPile = options.cardsToDrawDiscardPile as number;
         this._cardsToDeal = options.cardsToDeal as number;

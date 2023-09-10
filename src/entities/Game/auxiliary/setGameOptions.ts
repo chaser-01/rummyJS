@@ -1,48 +1,12 @@
 import { GameConfig } from "./extraTypes";
 
-/*
-Functions here are used for setting/verifying config options.
-Most work like so:
-    -Accepts a config object and the intended option
-    -If option wasn't specified, set it to the config default
-    -If the config doesn't specify any value/a useable value for that option, set it to a hardcoded value
-    -Return the option
 
-Some functions, eg setCardsToDealAndNumberOfDecks, may have additional logic to ensure the specified options are feasible etc.
-*/
-
-
-//Returns useWildcard option.
-export function setWildcardOption(config: GameConfig, useJoker: boolean|undefined){
-    let setUseJoker;
-    if (useJoker===undefined) setUseJoker = config.useJoker;
-    else setUseJoker = useJoker;
-    return setUseJoker;
+/* If the option is undefined, returns it from config. */
+export function setOption(config: GameConfig, option: number|boolean|"all"|undefined, optionName: keyof GameConfig){
+    if (option==undefined) return config[optionName];
+    else return option;
 }
 
-//Returns useJoker option.
-export function setJokerOption(config: GameConfig, useWildcard: boolean|undefined){
-    let setUseWildcard;
-    if (useWildcard===undefined) setUseWildcard = config.useWildcard;
-    else setUseWildcard = useWildcard;
-    return setUseWildcard;
-}
-
-//Returns cardsToDraw option.
-export function setCardsToDraw(config: GameConfig, cardsToDraw: number|undefined){
-    let setCardsToDraw;
-    if (cardsToDraw===undefined) setCardsToDraw = config.cardsToDraw;
-    else setCardsToDraw = cardsToDraw;
-    return setCardsToDraw;
-}
-
-//Returns cardsToDrawDiscardPile option.
-export function setCardsToDrawDiscardPile(config: GameConfig, cardsToDrawDiscardPile: number|"all"|undefined){
-    let setCardsToDrawDiscardPile;
-    if (cardsToDrawDiscardPile===undefined) setCardsToDrawDiscardPile = config.cardsToDrawDiscardPile;
-    else setCardsToDrawDiscardPile = cardsToDrawDiscardPile;
-    return setCardsToDrawDiscardPile;
-}
 
 /*
 Returns cardsToDeal and numberOfDecks options.
