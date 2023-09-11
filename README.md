@@ -15,7 +15,7 @@ npm install rummyts
 ## Usage
 Import the necessary classes:
 ```
-import 
+import {Game} from 'rummyts';
 ```
 
 ### Game
