@@ -16,8 +16,9 @@ npm install rummyts
 ## Usage
 Import the necessary objects:
 ```
-
+import {Game} from `rummyts`;
 ```
+
 Instantiate a game by passing in an array of playerId strings:
 ```
 let game = new Game(['1', '2', '3']);
