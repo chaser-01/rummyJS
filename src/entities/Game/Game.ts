@@ -243,15 +243,17 @@ export class Game {
             //TO DO: get last round winner
             this.setGameStatus(this.GameStatus.PLAYER_TO_DRAW);
         }
-
-        this._logger.logNewRound();
+        
         return true;
     }
 
 
-    /** Goes to the next player. While the next player isn't playing, go to the next next player. */
-    public nextPlayer(){
-        if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN_ENDED)) return false;
+    /** 
+     * Goes to the next player. While the next player isn't playing, go to the next next player. 
+     * Should only be called in endTurn.
+    */
+    private nextPlayer(){
+        if (!this.validateGameState() || !this.validateGameStatus(this.GameStatus.PLAYER_TURN)) return false;
 
         //while next player isn't playing, go to the next next player (modulo no. of _players, to loop back to first player)
         do {this._currentPlayerIndex = (this._currentPlayerIndex+1) % (this._players.length);}
@@ -271,7 +273,6 @@ export class Game {
         this._players[playerIndex].playing = false;
         if (this.checkGameEnded()) return true;
         if (this._currentPlayerIndex === playerIndex){
-            this.setGameStatus(this.GameStatus.PLAYER_TURN_ENDED);
             this.nextPlayer();
         }
         this._logger.logGameAction('quitPlayer', this._players[playerIndex].id, {playerIndex}, undefined);
@@ -296,9 +297,10 @@ export class Game {
 
 
     /** Adds a new player to the game. */
-    public addPlayer(playerId: string){
+    public addPlayer(playerId: string, position: number|undefined){
         if (!this.validateGameState()) return;
-        this._players.push(new Player(this, playerId));
+        if (position && position<this._players.length) this._players.splice(position, 0, new Player(this, playerId));
+        else this._players.push(new Player(this, playerId));
         this._logger.logGameAction('addPlayer', playerId, {playerId}, undefined); 
     }
 
@@ -316,26 +318,9 @@ export class Game {
     ////////////////////////////////////////////////////////////////////////////
 
     
-    
-    /** Sorts a player's hand, by suit THEN by number. */
-    //TO DO: this is broken (probably the comparison function), plz fix
-    public sortHandBySuit(playerIndex = this._currentPlayerIndex){
-        if (!this.validateGameState()) return false;
-
-        this._players[playerIndex].hand.sort((a, b) => {
-            if (a.number == this._jokerNumber && b.number == this._jokerNumber) return Card.compareCardsSuitFirst(a, b);
-            if (a.number == this._jokerNumber) return 1;
-            if (b.number == this._jokerNumber) return -1;
-            return Card.compareCardsSuitFirst(a, b);
-        })
-
-        this._logger.logGameAction('sortHandBySuit', this._players[playerIndex].id, undefined, undefined);
-        return true;
-    }
-
 
     /** Sorts a player's hand, by number THEN by suit. Defaults to current _players. */
-    public sortHandByNumber(playerIndex = this._currentPlayerIndex){
+    public sortHand(playerIndex = this._currentPlayerIndex){
         if (!this.validateGameState()) return false;
 
         this._players[playerIndex].hand.sort((a, b) => {
@@ -345,7 +330,7 @@ export class Game {
             return Card.compareCardsNumberFirst(a, b);
         })
 
-        this._logger.logGameAction('sortHandByNumber', this._players[playerIndex].id, undefined, undefined);
+        this._logger.logGameAction('sortHand', this._players[playerIndex].id, undefined, undefined);
         return true;
     }
 
@@ -437,7 +422,7 @@ export class Game {
      * Called automatically by createMeld in the case of invalid meld.
      * Doesn't do anything currently, but can be overridden if needed.
      */
-    public invalidMeldDeclaration(){
+    private invalidMeldDeclaration(){
         return;
     } 
 
@@ -529,7 +514,7 @@ export class Game {
         let discardedCard = this._players[this._currentPlayerIndex].hand.splice(cardIndex, 1)[0];
         this._deck.addToDiscardPile(discardedCard);
         this._logger.logGameAction('endTurn', this._players[this._currentPlayerIndex].id, {cardIndex}, undefined);
-        this.setGameStatus(this.GameStatus.PLAYER_TURN_ENDED);
+        this.nextPlayer();
         return true;
     }
 
@@ -553,8 +538,7 @@ export class Game {
 
             currentPlayer: {
                 id: this._players[playerIndex].id,
-                hand: this._players[playerIndex].hand,
-                melds: this._players[playerIndex].melds
+                hand: this._players[playerIndex].hand
             },
 
             tableMelds: this._players.reduce((acc: {[playerId: string]: Meld[]}, player) => {

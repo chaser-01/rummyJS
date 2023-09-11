@@ -26,7 +26,7 @@ export class GameInitialization{
     */
     initializeOptions(title: string, numPlayers: number){
         let gameConfig = this.loadConfig(title);
-
+        
         this.gameOptions.useWildcard = setOption(gameConfig, this.gameOptions.useWildcard, "useWildcard") as boolean;
         this.gameOptions.useJoker = setOption(gameConfig, this.gameOptions.useJoker, "useJoker") as boolean;
         if (this.gameOptions.useJoker && this.gameOptions.useWildcard) this.gameOptions.useWildcard = false; //can only use either

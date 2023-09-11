@@ -7,7 +7,6 @@
 export enum GameStatus {
     PLAYER_TO_DRAW = 'PLAYER_TO_DRAW',
     PLAYER_TURN = 'PLAYER_TURN',
-    PLAYER_TURN_ENDED = 'PLAYER_TURN_ENDED',
     ROUND_ENDED = 'ROUND_ENDED',
     END_GAME = 'END_GAME'
   };

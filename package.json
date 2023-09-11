@@ -1,6 +1,7 @@
 {
   "name": "rummyts",
   "version": "1.0.0",
+  "keywords": ["rummy", "card game"],
   "devDependencies": {
     "@types/jest": "^29.5.4",
     "ts-jest": "^29.1.1",
@@ -13,5 +14,8 @@
 
   "exports": {
     ".": "./src/index.ts"
-  }
+  },
+  
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts"
 }

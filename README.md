@@ -1,17 +1,27 @@
-# rummyJS
+# rummyTS
 
-rummyJS is a package for modelling a game of Rummy, and its variants. Its features target realistic use cases, including:
+A unit-tested package for modelling a game of Rummy. It features:
 - Standard player moves
 - Mid-game player additions/removals
 - Gamestate validation
 - Strict game flow
 - Scorekeeping
 - Error and game/player action logging
-    
-It's also extensible, as variants can be created by extending base classes as necessary.
 
-## Instantiating a game
-WIP
+## Installing
+```
+npm install rummyts
+```
+
+## Usage
+Import the necessary objects:
+```
+
+```
+Instantiate a game by passing in an array of playerId strings:
+```
+let game = new Game(['1', '2', '3']);
+```
 
 ## Game flow
 The `gameStatus` property controls what actions can at a point in time in the game. Thus, one should compare it against possible states (defined as an enum in `GameStatus`), when tracking the game and determining what actions should be taken by the game/players. 
@@ -49,7 +59,3 @@ Some game actions can be taken regardless of the current state (excluding END_GA
 - ***addPlayer*** - Adds a new player to the game.  
 - ***forceEndGame*** - Forces the end of the game.  
 
-
-## Creating Rummy variants
-
-WIP

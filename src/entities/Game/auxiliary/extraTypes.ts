@@ -22,7 +22,7 @@ export interface ExternalGameInfo {
     deckSize: number,
     topDiscardCard: Card,
     discardPileSize: number
-    currentPlayer: {id: string, hand: Card[], melds: Meld[]}
+    currentPlayer: {id: string, hand: Card[]}
     tableMelds: {[playerId: string]: Meld[]}
 }
 

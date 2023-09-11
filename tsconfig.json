@@ -4,7 +4,10 @@
     "module": "ES2022",
     "moduleResolution": "Node",
     "strict": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "outDir": "./dist",
+    "noEmit": false,
+    "declaration": true
   },
   
   "ts-node": {
