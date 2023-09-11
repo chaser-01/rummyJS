@@ -1,5 +1,7 @@
 # rummyTS
-A unit-tested package for modelling a game of Rummy. It features:
+**Warning!** This library is currently under heavy development. The API is unstable and may change at any moment without prior notice. Use at your own risk.
+
+A unit-tested library for modelling a game of Rummy. It features:
 - Standard player moves
 - Mid-game player additions/removals
 - Gamestate validation
