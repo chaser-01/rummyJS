@@ -31,25 +31,11 @@ Optionally, pass in options to customize a few aspects of the game:
 ```
 //the possible options and their default values
 let game = new Game(['1', '2', '3'], {
-    //whether to use wildcard (starts from 2, all the way to Ace)
     useWildcard: false,
-
-    //whether to use joker; cannot use alongside wildcard
     useJoker: true,
-
-    //cards to draw at start of turn
     cardsToDraw: 1,
-
-    //cards to draw from discard pile at start of turn, if the player wishes to
-    //can also set to "all", ie draw all discarded cards instead of fixed amount
-    cardsToDrawDiscardPile: 1, 
-
-    //cards to deal at start of round
-    //default depends on player count and number of decks
+    cardsToDrawDiscardPile: 1, //can also set to "all"
     cardsToDeal: 10, 
-
-    //number of poker decks to use in the game (>1 useful for larger playercounts)
-    //default depends on player count
     numberOfDecks: 1 
 })
 ```
@@ -103,7 +89,7 @@ console.log(info);
 
 We can also **directly access each player's hand** (though don't show this information to other players, since that would be unfair):
 ```
-let firstPlayerHand = game.players[0];
+let firstPlayerHand = game.players[0].hand;
 ```
 
 The current player can then perform moves, such as **create a meld**:
