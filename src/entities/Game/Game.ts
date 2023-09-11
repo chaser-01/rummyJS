@@ -73,8 +73,8 @@ export class Game {
         this._currentRound = 0;
         this._gameStatus = this.GameStatus.ROUND_ENDED;
 
-        [this._deck, this._jokerNumber, this._validationCards] = this.gameInitialization.initializeDeckJokerAndValidationCards();
-        this._validationCards = this._deck.getCards().slice().sort()
+        [this._deck, this._jokerNumber] = this.gameInitialization.initializeDeckAndJoker();
+        this._validationCards = this._deck.getCards().slice().sort(this._deck.compareCards);
         this._cardsToDraw = options.cardsToDraw as number; //its OK since initializeOptions sets these to numbers
         this._cardsToDrawDiscardPile = options.cardsToDrawDiscardPile as number;
         this._cardsToDeal = options.cardsToDeal as number;
@@ -439,7 +439,7 @@ export class Game {
      */
     public invalidMeldDeclaration(){
         return;
-    }
+    } 
 
 
     /**  Attempts to add a specified card in current player's hand, to a specified meld, of a specified player. */

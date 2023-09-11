@@ -3,7 +3,6 @@ import { GameScore } from "./GameScore";
 import { Logger } from "../Logger/Logger";
 import { Player } from "../Player/Player";
 import { PokerDeck } from "../PokerDeck/PokerDeck";
-import { Card } from "../PokerDeck/Card";
 import { loadConfigFile } from "./auxiliary/loadConfig";
 import { setCardsToDealAndNumberOfDecks, setOption } from "./auxiliary/setGameOptions";
 import { GameOptions, GameConfig } from "./auxiliary/extraTypes.js";
@@ -25,23 +24,18 @@ export class GameInitialization{
      * Checks each gameOptions option if its undefined/valid; if so, corrects/sets it in-place using the variant config.
      * Variants with their own options should override this, then super it.
     */
-
-    //TO DO: limit numerical options so that they make sense within context of a Rummy game (ie, cant draw >52*numDecks cards etc)
     initializeOptions(title: string, numPlayers: number){
         let gameConfig = this.loadConfig(title);
 
         this.gameOptions.useWildcard = setOption(gameConfig, this.gameOptions.useWildcard, "useWildcard") as boolean;
         this.gameOptions.useJoker = setOption(gameConfig, this.gameOptions.useJoker, "useJoker") as boolean;
-        if (this.gameOptions.useJoker && this.gameOptions.useWildcard) this.gameOptions.useWildcard = false;
+        if (this.gameOptions.useJoker && this.gameOptions.useWildcard) this.gameOptions.useWildcard = false; //can only use either
+
         this.gameOptions.cardsToDraw = setOption(gameConfig, this.gameOptions.cardsToDraw, "cardsToDraw") as number;
         this.gameOptions.cardsToDrawDiscardPile = setOption(gameConfig, this.gameOptions.cardsToDrawDiscardPile, "cardsToDrawDiscardPile") as number|"all";
 
         [this.gameOptions.cardsToDeal, this.gameOptions.numberOfDecks] 
-        = setCardsToDealAndNumberOfDecks(
-            gameConfig, 
-            numPlayers, 
-            this.gameOptions.cardsToDeal, 
-            this.gameOptions.numberOfDecks);
+        = setCardsToDealAndNumberOfDecks(gameConfig, numPlayers, this.gameOptions.cardsToDeal, this.gameOptions.numberOfDecks);
     }
 
 
@@ -77,9 +71,8 @@ export class GameInitialization{
 
 
     /** Initializes deck, joker (printed/wildcard/none, depending on game configuration), and a copy of the deck for validation later. */
-    initializeDeckJokerAndValidationCards(): [PokerDeck, keyof typeof PokerDeck.numbers|false, Card[]]{
+    initializeDeckAndJoker(): [PokerDeck, keyof typeof PokerDeck.numbers|false]{
         let deck = new PokerDeck(this.gameOptions.numberOfDecks, this.gameOptions.useJoker);
-        let validationCards = deck.getCards().slice().sort(Card.compareCardsSuitFirst);
         deck.shuffle();
         
         //wildcard number = (currentRound+1)%(size of deck numbers)
@@ -88,6 +81,6 @@ export class GameInitialization{
         else if (this.gameOptions.useWildcard) jokerNumber = deck.numbers[0] as keyof typeof PokerDeck.numbers;
         else jokerNumber = false;
 
-        return [deck, jokerNumber, validationCards];
+        return [deck, jokerNumber];
     }
 }

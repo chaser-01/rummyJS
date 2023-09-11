@@ -33,8 +33,8 @@ describe('GameInitialization', () => {
         });
     })
 
-    test('should modify gameOptions during initializeOptions, only for invalid/missing options', () => {
-        //all missing options are initialized, but cardsToDraw remains since it is valid
+    test('should modify gameOptions during initializeOptions, for invalid/missing options', () => {
+        //all missing options will be initialized, but cardsToDraw remains since it is valid
         expect(initGameInit({
             cardsToDraw: 2
         }, 2).gameOptions)
@@ -47,7 +47,7 @@ describe('GameInitialization', () => {
             numberOfDecks: 1
         })
 
-        //if it's present but not valid in a game, it will be modified to the config setting
+        //if the option is present but invalid (cardsToDraw>52), it will be modified to the config default
         expect(initGameInit({
             cardsToDraw: 999
         }, 2).gameOptions)
@@ -64,9 +64,8 @@ describe('GameInitialization', () => {
     test('should initialize deck, jokers and validation cards using the options', () => {
         let gameInit = initGameInit({}, 2);
         let pokerdeck = new PokerDeck(1, true);
-        let result = gameInit.initializeDeckJokerAndValidationCards()
-        expect(result[0]).toEqual(pokerdeck);
+        let result = gameInit.initializeDeckAndJoker();
+        expect(result[0].getCards().sort(pokerdeck.compareCards)).toEqual(pokerdeck.getCards().sort(pokerdeck.compareCards));
         expect(result[1]).toEqual("Joker");
-        expect(result[2].length).toEqual(pokerdeck.getCards().length);
     })
 })
