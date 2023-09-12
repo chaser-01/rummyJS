@@ -35,6 +35,7 @@ export class GameScore{
      * Calls evaluatePlayerScore for each (currently playing) player.
      */
     evaluateRoundScore(){
+        if (this.scores[this.game.currentRound]==undefined) this.scores[this.game.currentRound] = [];
         for (const player of this.game.players){
             let score = this.evaluatePlayerScore(player);
             this.scores[this.game.currentRound].push([player, score]);
@@ -46,7 +47,7 @@ export class GameScore{
      * Evaluates a single player's score.
      * Variants with different scoring systems should override this.
      */
-    evaluatePlayerScore(player: Player): number{
+    private evaluatePlayerScore(player: Player): number{
         let score = 0;
         if (player.hand){
             score = player.hand.reduce((prevVal, card) => prevVal+card.cardNumberValue(), score);

@@ -4,9 +4,9 @@ type argList = {
     [argName: string]: string | number | string[] | number[]
 }
 
-type LogObject = {
+export type LogObject = {
     functionName: string,
-    playerId: string|number,
+    playerId: string|undefined,
     args: argList,
     notes: string
 }
@@ -37,22 +37,17 @@ export class Logger{
     }
 
 
-    /** If the game's current round doesn't exist in actionLog/warningLog, create it */
-    logNewRound(){
-        if (!this.actionLog[this.game.currentRound]) this.actionLog[this.game.currentRound] = [];
-        if (!this.warningLog[this.game.currentRound]) this.warningLog[this.game.currentRound] = [];
-    }
-
-
     /** Logs a game warning/error. */
-    logWarning(functionName: string, playerId: string='GAME', args: argList={}, notes=''){
+    logWarning(functionName: string, playerId: string|undefined='GAME', args: argList={}, notes=''){
+        if (!this.warningLog[this.game.currentRound]) this.warningLog[this.game.currentRound] = [];
         let logObject: LogObject = {functionName, playerId, args, notes};
         this.warningLog[this.game.currentRound].push(logObject);
     }
 
 
     /** Logs a game action. */
-    logGameAction(functionName: string, playerId: string='GAME', args: argList={}, notes=''){
+    logGameAction(functionName: string, playerId: string|undefined='GAME', args: argList={}, notes=''){
+        if (!this.actionLog[this.game.currentRound]) this.actionLog[this.game.currentRound] = [];
         let logObject: LogObject = {functionName, playerId, args, notes};
         this.actionLog[this.game.currentRound].push(logObject);
     }   

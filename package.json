@@ -1,6 +1,10 @@
 {
+  "files": ["dist", "README.md", "package.json"],
   "name": "rummyts",
-  "version": "1.0.0",
+  "version": "1.1.1",
+  "url": "https://github.com/mhbka/rummyTS",
+  "type": "module",
+  "keywords": ["rummy", "card game"],
   "devDependencies": {
     "@types/jest": "^29.5.4",
     "ts-jest": "^29.1.1",
@@ -8,10 +12,14 @@
     "typescript": "^5.1.6"
   },
   "scripts": {
-    "test": "npx jest"
+    "test": "npx jest",
+    "build": "tsc"
   },
 
   "exports": {
     ".": "./src/index.ts"
-  }
+  },
+  
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts"
 }

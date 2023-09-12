@@ -14,9 +14,11 @@ export class PokerDeck extends Deck<Card>{
 
     /** Access suits enum through the class. */
     suits = suits;
+    static suits = suits;
 
     /** Access suits enum through the class. */
     numbers = numbers;
+    static numbers = numbers;
 
     /** The deck's discard pile. */
     private _discardPile: Deck<Card>;
@@ -88,9 +90,15 @@ export class PokerDeck extends Deck<Card>{
     }
 
 
-    /**  Puts the discard pile back onto the top of the deck. */
+    /** Puts the discard pile back onto the top of the deck. */
     resetDiscardPile(){
         let allDiscardedCards = this.drawFromDiscardPile(this.getDiscardPileSize());
         this.addToTop(allDiscardedCards);
+    }
+
+
+    /** Used as a callback fn for sorting cards... really its just the Card compare fn. */
+    compareCards(a: Card, b: Card){
+        return Card.compareCardsSuitFirst(a, b);
     }
 }
