@@ -13,8 +13,16 @@ It's also extensible, as variants can be created by extending base classes as ne
 ## Instantiating a game
 WIP
 
+<<<<<<< Updated upstream
 ## Game flow
 The `gameStatus` property controls what actions can at a point in time in the game. Thus, one should compare it against possible states (defined in `GameStatus`), when tracking the game and determining what actions should be taken by the game/players. 
+=======
+## Usage
+Import necessary classes:
+```
+import {Game} from 'rummyts';
+```
+>>>>>>> Stashed changes
 
 Below are the defined states and their allowed actions:
 
